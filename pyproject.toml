@@ -1,0 +1,80 @@
+[project]
+name = "spot-perceptio"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi (>=0.119)",
+    "uvicorn (>=0.37)",
+    "ultralytics (>=8.3)",
+    "opencv-python (>=4.12)",
+    "opencv-contrib-python (>=4.12)",
+    "openai (>=2.3.0)",
+    "dishka (>=1.7)"
+]
+
+[dependency-groups]
+dev = [
+    "debugpy (>=1.8)",
+    "pylint (>=4.0.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.pylint.main]
+max-line-length = 100
+ignore-paths = ["tests/", "migrations/", "__pycache__/"]
+
+load-plugins = [
+    "pylint.extensions.docparams",
+    "pylint.extensions.typing",
+    "pylint.extensions.code_style"
+]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-docstring",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-instance-attributes",
+    "unused-argument"
+]
+
+[tool.pylint.design]
+max-locals = 25
+max-args = 8
+max-attributes = 10
+
+[tool.pylint.format]
+indent-string = "    "
+
+[tool.pylint.typecheck]
+ignored-modules = [
+    "cv2",
+    "numpy",
+    "PIL",
+    "skimage",
+    "torch",
+    "tensorflow",
+    "fastapi",
+    "pydantic"
+]
+
+[tool.pylint.basic]
+good-names = [
+    "id", "x", "y", "z", "db", "vo", "lp", "cv", "dt", "np", "df", "i", "j", "k"
+]
+
+[tool.pylint.classes]
+valid-classmethod-first-arg = ["cls"]
+valid-metaclass-classmethod-first-arg = ["mcs"]
+
+[tool.pylint.similarities]
+min-similarity-lines = 8
+ignore-comments = true
+ignore-docstrings = true
