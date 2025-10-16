@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.debugpy",
+			"ms-python.pylint",
+			"ms-python.autopep8",
+			"cstrap.python-snippets",
+			"njqdev.vscode-python-typehint",
+			"dongli.python-preview",
+			"KevinRose.vsc-python-indent",
+			"ms-vscode.makefile-tools",
+			"ms-azuretools.vscode-docker",
+			"ms-vscode-remote.remote-containers",
+			"aprilandjan.ascii-tree-generator",
+			"bungcip.better-toml"
+		]
+	}
+}
