@@ -1,0 +1,6 @@
+from typing import Protocol, Any
+from collections.abc import Callable
+
+class WorkerPool(Protocol):
+    async def run(self, func: Callable[..., Any], *args, **kwargs) -> Any: ...
+    async def shutdown(self) -> None: ...

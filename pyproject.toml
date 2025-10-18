@@ -16,7 +16,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "debugpy (>=1.8)",
-    "pylint (>=4.0.0)"
+    "pylint (>=4.0.0)",
+    "pylint-pydantic (>=0.4)",
+    "pytest (>=8.4)",
+    "pytest-asyncio (>=1.2)"
 ]
 
 [build-system]
@@ -28,12 +31,13 @@ package-mode = false
 
 [tool.pylint.main]
 max-line-length = 100
-ignore-paths = ["tests/", "migrations/", "__pycache__/"]
+ignore-paths = ["migrations/", "__pycache__/"]
 
 load-plugins = [
     "pylint.extensions.docparams",
     "pylint.extensions.typing",
-    "pylint.extensions.code_style"
+    "pylint.extensions.code_style",
+    "pylint_pydantic"
 ]
 
 [tool.pylint.messages_control]
@@ -42,7 +46,8 @@ disable = [
     "too-few-public-methods",
     "too-many-arguments",
     "too-many-instance-attributes",
-    "unused-argument"
+    "unused-argument",
+    "consider-using-assignment-expr"
 ]
 
 [tool.pylint.design]
@@ -78,3 +83,18 @@ valid-metaclass-classmethod-first-arg = ["mcs"]
 min-similarity-lines = 8
 ignore-comments = true
 ignore-docstrings = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-v"
+]
+markers = [
+    "unit: Unit tests"
+]
+asyncio_mode = "auto"

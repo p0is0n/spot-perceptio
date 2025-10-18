@@ -1,0 +1,6 @@
+from typing import Protocol, Any
+
+class Container(Protocol):
+    def setup(self, app: Any = None) -> None: ...
+
+    def shutdown(self) -> None: ...
