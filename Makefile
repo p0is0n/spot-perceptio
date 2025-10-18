@@ -9,4 +9,15 @@ clean-cache:
 	@find . -name '*.pyc' -delete
 
 lint:
-	@pylint src/
+	@pylint -j 0 \
+		--recursive=y \
+		--output-format=colorized \
+		--reports=n \
+		--score=n \
+		src/**/*.py \
+		tests/unit/**/*.py
+
+test: test-unit
+
+test-unit:
+	@pytest -m unit
