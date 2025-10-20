@@ -1,0 +1,66 @@
+name: Check & Test
+run-name: Check & Test Builds run by @${{ github.actor }}
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env: {}
+
+jobs:
+  check:
+    needs: []
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare container
+        run: |
+          make build-container-test
+
+      - name: Run checks
+        run: |
+          make run-in-container CMD="make lint"
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker system prune -f
+
+  test:
+    needs: [check]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up
+        uses: docker/setup-buildx-action@v3
+
+      - name: Prepare container
+        run: |
+          make build-container-test
+
+      - name: Run tests
+        run: |
+          make run-in-container CMD="make test"
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker system prune -f
