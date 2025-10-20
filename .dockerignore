@@ -1,11 +1,20 @@
 .git
 .gitignore
 .gitattributes
+.github
 
 docker-compose.yml
 Dockerfile
+Dockerfile.dev
+Dockerfile.test
 .docker
 .dockerignore
 
 **/__pycache__/
 **/*.py[cod]
+
+.DS_Store
+.editorconfig
+*.code-workspace
+.vscode
+.devcontainer
