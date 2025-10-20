@@ -14,52 +14,76 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-env: {}
+env:
+  IMAGE_NAME: spot-perceptio
+  IMAGE_TAR: spot-perceptio-container.tar
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_tar: ${{ env.IMAGE_TAR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container
+        run: |
+          make build-container-test
+
+      - name: Save container image
+        run: |
+          docker save -o ${{ env.IMAGE_TAR }} ${{ env.IMAGE_NAME }}
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: ${{ env.IMAGE_TAR }}
+
   check:
+    needs: [build]
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up
-      uses: docker/setup-buildx-action@v3
+      - name: Download container
+          uses: actions/download-artifact@v4
+          with:
+            name: docker-image
 
-    - name: Prepare container
-      run: |
-        make build-container-test
-      
-    - name: Lint code
-      run: |
-        make run-in-container CMD="make lint"
+      - name: Prepare container
+        run: |
+          docker load -i ${{ env.IMAGE_TAR }}
 
-    - name: Cleanup container
-      if: always()
-      run: |
-        docker system prune -f
+      - name: Run linter
+        run: |
+          make run-in-container CMD="make lint"
 
   test:
-    needs: check
+    needs: [build, check]
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up
-      uses: docker/setup-buildx-action@v3
+      - name: Download container
+          uses: actions/download-artifact@v4
+          with:
+            name: docker-image
 
-    - name: Prepare container
-      run: |
-        make build-container-test
-      
-    - name: Test code
-      run: |
-        make run-in-container CMD="make test"
+      - name: Prepare container
+        run: |
+          docker load -i ${{ env.IMAGE_TAR }}
 
-    - name: Cleanup container
-      if: always()
-      run: |
-        docker system prune -f
+      - name: Run tests
+        run: |
+          make run-in-container CMD="make test"
