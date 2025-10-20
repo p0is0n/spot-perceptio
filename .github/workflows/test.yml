@@ -14,76 +14,53 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  IMAGE_NAME: spot-perceptio
-  IMAGE_TAR: spot-perceptio-container.tar
+env: {}
 
 jobs:
-  build:
+  check:
+    needs: []
     runs-on: ubuntu-latest
-
-    outputs:
-      image_tar: ${{ env.IMAGE_TAR }}
-
+    
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up
         uses: docker/setup-buildx-action@v3
 
-      - name: Build container
+      - name: Prepare container
         run: |
           make build-container-test
 
-      - name: Save container image
-        run: |
-          docker save -o ${{ env.IMAGE_TAR }} ${{ env.IMAGE_NAME }}
-
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: ${{ env.IMAGE_TAR }}
-
-  check:
-    needs: [build]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download container
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Prepare container
-        run: |
-          docker load -i ${{ env.IMAGE_TAR }}
-
-      - name: Run linter
+      - name: Run checks
         run: |
           make run-in-container CMD="make lint"
 
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker system prune -f
+
   test:
-    needs: [build, check]
+    needs: [check]
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download container
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
+      - name: Set up
+        uses: docker/setup-buildx-action@v3
 
       - name: Prepare container
         run: |
-          docker load -i ${{ env.IMAGE_TAR }}
+          make build-container-test
 
       - name: Run tests
         run: |
           make run-in-container CMD="make test"
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker system prune -f
