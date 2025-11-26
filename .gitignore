@@ -38,6 +38,7 @@ poetry.lock
 # dotenv
 .env
 .env.*
+!.env.example
 
 # Compiled Python files
 *.pyd
@@ -55,7 +56,9 @@ dist/
 htmlcov/
 .coverage
 coverage.xml
+coverage.md
 .cache/
+classes.dot
 
 # Model files
 *.onnx

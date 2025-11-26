@@ -32,7 +32,7 @@ clean-container:
 #
 
 run-rest-dev:
-	@uvicorn $(APP_REST) --reload
+	@uvicorn $(APP_REST) --reload --log-level=debug
 
 run-rest-test:
 	@uvicorn $(APP_REST)
@@ -54,10 +54,22 @@ lint:
 		--output-format=colorized \
 		--reports=n \
 		--score=y \
+		--jobs=0 \
+		--verbose \
 		src/**/*.py \
 		tests/unit/**/*.py
+
+type-check:
+	@mypy --exclude-gitignore \
+		--no-color-output \
+		./
 
 test: test-unit
 
 test-unit:
 	@pytest -m unit
+
+test-unit-cov:
+	@pytest --cov=src/ --cov-report=term-missing --cov-report html -m unit
+
+check: lint type-check
