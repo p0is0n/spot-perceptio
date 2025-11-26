@@ -20,5 +20,28 @@
 			"aprilandjan.ascii-tree-generator",
 			"bungcip.better-toml"
 		]
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Python Debugger: Rest",
+				"type": "debugpy",
+				"request": "launch",
+				"cwd": "${workspaceFolder}",
+				"module": "uvicorn",
+				"args": [
+					"src.app.rest.main:app",
+					"--workers=1",
+					"--timeout-graceful-shutdown=10",
+					"--reload",
+					"--access-log",
+					"--use-colors",
+					"--log-level=debug"
+				],
+				"console": "integratedTerminal",
+				"stopOnEntry": false
+			}
+		]
 	}
 }

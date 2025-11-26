@@ -19,7 +19,11 @@ dev = [
     "pylint (>=4.0.0)",
     "pylint-pydantic (>=0.4)",
     "pytest (>=8.4)",
-    "pytest-asyncio (>=1.2)"
+    "pytest-asyncio (>=1.2)",
+    "pytest-cov (>=7.0.0)",
+    "faker (>=37.12.0)",
+    "mypy (>=1.18.2,<2.0.0)",
+    "pydantic[mypy] (>=2.12.4,<3.0.0)"
 ]
 
 [build-system]
@@ -29,10 +33,22 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 package-mode = false
 
+[tool.mypy]
+plugins = [
+    "pydantic.mypy"
+]
+mypy_path = [
+    "src"
+]
+explicit_package_bases = true
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
+strict = true
+
 [tool.pylint.main]
 max-line-length = 100
 ignore-paths = ["migrations/", "__pycache__/"]
-
 load-plugins = [
     "pylint.extensions.docparams",
     "pylint.extensions.typing",
@@ -43,11 +59,9 @@ load-plugins = [
 [tool.pylint.messages_control]
 disable = [
     "missing-docstring",
-    "too-few-public-methods",
-    "too-many-arguments",
-    "too-many-instance-attributes",
     "unused-argument",
-    "consider-using-assignment-expr"
+    "too-few-public-methods",
+    "consider-using-assignment-expr",
 ]
 
 [tool.pylint.design]
@@ -59,16 +73,12 @@ max-attributes = 10
 indent-string = "    "
 
 [tool.pylint.typecheck]
+generated-members = ["cv2.*"]
 ignored-modules = [
-    "cv2",
-    "numpy",
-    "PIL",
-    "skimage",
-    "torch",
-    "tensorflow",
-    "fastapi",
-    "pydantic"
 ]
+
+[tool.pylint.typing]
+runtime-typing = true
 
 [tool.pylint.basic]
 good-names = [
@@ -76,6 +86,7 @@ good-names = [
 ]
 
 [tool.pylint.classes]
+check-protected-access-in-special-methods = true
 valid-classmethod-first-arg = ["cls"]
 valid-metaclass-classmethod-first-arg = ["mcs"]
 
