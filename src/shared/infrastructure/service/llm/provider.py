@@ -9,6 +9,7 @@ class OpenAILLMProvider(LLMProvider):
 
     async def conversation(
         self,
-        request: conversation.Request
+        request: conversation.Request,
+        /
     ) -> conversation.Response:
         raise NotImplementedError

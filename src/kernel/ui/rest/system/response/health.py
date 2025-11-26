@@ -1,6 +1,8 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import Field
 
-class HealthResponse(BaseModel):
+from kernel.ui.rest.base.response import BaseResponse
+
+class HealthResponse(BaseResponse):
     status: str
-    time: datetime
+    time: datetime = Field(strict=True)

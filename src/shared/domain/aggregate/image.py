@@ -1,16 +1,21 @@
 from typing import Self
-from dataclasses import dataclass
 
-from shared.domain.vo.coordinate import BoundingBox
+from shared.domain.aggregate.base import Aggregate
+from shared.domain.vo.coordinate import BoundingBox, RotatedBoundingBox, Polygon
 from shared.domain.vo.data import ImageBinary
 
-@dataclass(frozen=True)
-class Image:
+class Image(Aggregate):
     data: ImageBinary
-    coordinate: BoundingBox
+    coordinate: BoundingBox | RotatedBoundingBox | Polygon
 
-    def crop(self, coordinate: BoundingBox) -> Self:
-        return Image(
-            data=self.data.crop(coordinate),
+    def crop(
+        self,
+        coordinate: BoundingBox | RotatedBoundingBox | Polygon,
+        /
+    ) -> Self:
+        cropped = self.data.crop(coordinate)
+
+        return type(self)(
+            data=cropped,
             coordinate=coordinate
         )

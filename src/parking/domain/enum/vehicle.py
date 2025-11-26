@@ -1,6 +1,6 @@
 from enum import Enum
 
-class VehicleType(Enum):
+class VehicleType(str, Enum):
     CAR = "car"
     MOTORCYCLE = "motorcycle"
     BICYCLE = "bicycle"

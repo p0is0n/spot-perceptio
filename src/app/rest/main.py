@@ -1,7 +1,3 @@
-from di.container import Container
-from app.rest.base import create_app
+from app.rest.bootstrap import bootstrap
 
-app = create_app()
-
-container = Container()
-container.setup(app=app)
+app = bootstrap()

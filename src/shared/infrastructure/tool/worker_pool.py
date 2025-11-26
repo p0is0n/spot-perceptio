@@ -7,10 +7,10 @@ from collections.abc import Callable
 from shared.application.tool.worker_pool import WorkerPool
 
 class AsyncIOThreadWorkerPool(WorkerPool):
-    def __init__(self, max_workers: int):
+    def __init__(self, *, max_workers: int) -> None:
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
-    async def run(self, func: Callable[..., Any], *args, **kwargs) -> Any:
+    async def run(self, func: Callable[..., Any], /, *args: Any, **kwargs: Any) -> Any:
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             self._executor,

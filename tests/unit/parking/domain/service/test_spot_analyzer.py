@@ -1,4 +1,6 @@
 # pylint: disable=unused-import,redefined-outer-name,too-many-positional-arguments
+from typing import Any
+
 import pytest
 
 from parking.domain.service.spot.analyzer import SpotAnalyzer
@@ -6,7 +8,10 @@ from parking.domain.aggregate.spot import ParkingSpot
 from shared.domain.aggregate.image import Image
 
 from tests.unit.shared.fixtures.domain.aggregate.fixtures import sample_image
-from tests.unit.shared.fixtures.domain.vo.fixtures import mock_image_binary
+from tests.unit.shared.fixtures.domain.vo.fixtures import (
+    sample_coordinate_polygon,
+    mock_data_image_binary
+)
 from tests.unit.parking.fixtures.domain.service.vehicle.fixtures import mock_vehicle_recognizer
 from tests.unit.parking.fixtures.domain.vo.fixtures import sample_plate
 from tests.unit.parking.fixtures.domain.aggregate.fixtures import (
@@ -24,74 +29,71 @@ class TestSpotAnalyzer:
     @pytest.mark.asyncio
     async def test_analyze_with_vehicle(
         self,
-        mock_vehicle_recognizer,
-        sample_image,
-        sample_spot,
-        sample_vehicle
-    ):
+        mock_vehicle_recognizer: Any,
+        sample_image: Any,
+        sample_spot: Any,
+        sample_vehicle: Any
+    ) -> Any:
         """Test analyze method when vehicle is detected"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.return_value = sample_vehicle
 
         result = await analyzer.analyze(sample_image, sample_spot)
+        mock_vehicle_recognizer.recognize.assert_called_once()
 
         assert isinstance(result, ParkingSpot)
         assert result.occupied is True
         assert result.spot == sample_spot
         assert result.vehicle == sample_vehicle
 
-        mock_vehicle_recognizer.recognize.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_analyze_without_vehicle(
         self,
-        mock_vehicle_recognizer,
-        sample_image,
-        sample_spot
-    ):
+        mock_vehicle_recognizer: Any,
+        sample_image: Any,
+        sample_spot: Any
+    ) -> Any:
         """Test analyze method when no vehicle is detected"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.return_value = None
 
         result = await analyzer.analyze(sample_image, sample_spot)
+        mock_vehicle_recognizer.recognize.assert_called_once()
 
         assert isinstance(result, ParkingSpot)
         assert result.occupied is False
         assert result.spot == sample_spot
         assert result.vehicle is None
 
-        mock_vehicle_recognizer.recognize.assert_called_once()
-
     @pytest.mark.asyncio
     async def test_analyze_crops_image_correctly(
         self,
-        mock_vehicle_recognizer,
-        sample_image,
-        sample_spot
-    ):
+        mock_vehicle_recognizer: Any,
+        sample_image: Any,
+        sample_spot: Any
+    ) -> Any:
         """Test that analyze method crops image using spot coordinates"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.return_value = None
 
-        await analyzer.analyze(sample_image, sample_spot)
+        result = await analyzer.analyze(sample_image, sample_spot)
 
         sample_image.data.crop.assert_called_once_with(sample_spot.coordinate)
         mock_vehicle_recognizer.recognize.assert_called_once()
 
-        call_args = mock_vehicle_recognizer.recognize.call_args[0]
-        cropped_image = call_args[0]
+        image_cropped = mock_vehicle_recognizer.recognize.call_args.args[0]
 
-        assert len(call_args) == 1
-        assert isinstance(cropped_image, Image)
-        assert cropped_image.coordinate == sample_spot.coordinate
+        assert isinstance(result, ParkingSpot)
+        assert isinstance(image_cropped, Image)
+        assert image_cropped.coordinate == sample_spot.coordinate
 
     @pytest.mark.asyncio
     async def test_analyze_handles_recognizer_exception(
         self,
-        mock_vehicle_recognizer,
-        sample_image,
-        sample_spot
-    ):
+        mock_vehicle_recognizer: Any,
+        sample_image: Any,
+        sample_spot: Any
+    ) -> Any:
         """Test analyze method handles VehicleRecognizer exceptions"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.side_effect = Exception("Recognition failed")
@@ -102,10 +104,10 @@ class TestSpotAnalyzer:
     @pytest.mark.asyncio
     async def test_analyze_multiple_spots(
         self,
-        mock_vehicle_recognizer,
-        sample_image,
-        dynamic_spots
-    ):
+        mock_vehicle_recognizer: Any,
+        sample_image: Any,
+        dynamic_spots: Any
+    ) -> Any:
         """Test analyze method with multiple different spots"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.return_value = None

@@ -1,5 +1,4 @@
-from dataclasses import dataclass
+from shared.application.handler.base.query import Base
 
-@dataclass(frozen=True)
-class Query:
+class Query(Base):
     pass
