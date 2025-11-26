@@ -1,30 +1,30 @@
-from fastapi import APIRouter
-from starlette import status
+from typing import Annotated
+from fastapi import APIRouter, Query, status
 
 from di.container import Provide, inject
 
 from kernel.application.system.handler import echo
-from kernel.ui.rest.base.response import BaseResponse
+from kernel.ui.rest.base.response import Response
+from kernel.ui.rest.system.request.echo import EchoRequest
 from kernel.ui.rest.system.response.echo import EchoResponse
 
 router = APIRouter()
 
-
 @router.get(
     "/echo",
     status_code=status.HTTP_200_OK,
-    name="Echo Value",
-    description="Echoes the provided value back to the caller."
+    name="Test system with echo value",
+    description="Returns the echoed value along."
 )
 @inject
 async def get_echo(
-    value: str,
+    request: Annotated[EchoRequest, Query()],
     handler: Provide[echo.Handler]
-) -> BaseResponse[EchoResponse]:
-    query = echo.Query(value=value)
-    result = await handler.handle(query)
+) -> Response[EchoResponse]:
+    command = echo.Command(value=request.value)
+    result = await handler.handle(command)
 
-    return BaseResponse(
+    return Response[EchoResponse](
         data=EchoResponse(
             echo=result.echo,
             time=result.time

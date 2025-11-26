@@ -1,4 +1,6 @@
 # pylint: disable=unused-import,redefined-outer-name,too-many-positional-arguments
+from typing import Any
+
 import pytest
 
 from parking.domain.service.vehicle.recognizer import VehicleRecognizer
@@ -6,7 +8,10 @@ from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails
 from parking.domain.vo.plate import Plate
 
 from tests.unit.shared.fixtures.domain.aggregate.fixtures import sample_image
-from tests.unit.shared.fixtures.domain.vo.fixtures import mock_image_binary
+from tests.unit.shared.fixtures.domain.vo.fixtures import (
+    sample_coordinate_polygon,
+    mock_data_image_binary
+)
 from tests.unit.parking.fixtures.domain.service.vehicle.fixtures import (
     mock_vehicle_identifier,
     mock_plate_identifier
@@ -25,12 +30,12 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_with_vehicle_and_plate(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image,
-        sample_vehicle_details,
-        sample_plate
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any,
+        sample_vehicle_details: Any,
+        sample_plate: Any
+    ) -> Any:
         """Test recognize method when both vehicle and plate are detected"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
@@ -49,11 +54,11 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_with_vehicle_no_plate(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image,
-        sample_vehicle_details
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any,
+        sample_vehicle_details: Any
+    ) -> Any:
         """Test recognize method when vehicle is detected but no plate"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
@@ -72,10 +77,10 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_no_vehicle_detected(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any
+    ) -> Any:
         """Test recognize method when no vehicle is detected"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = None
@@ -90,12 +95,12 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_with_multiple_images(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image,
-        sample_vehicle_details,
-        sample_plate
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any,
+        sample_vehicle_details: Any,
+        sample_plate: Any
+    ) -> Any:
         """Test recognize method with multiple different images"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
@@ -117,10 +122,10 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_vehicle_identifier_exception(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any
+    ) -> Any:
         """Test recognize method when vehicle identifier raises exception"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.side_effect = Exception("Vehicle identification failed")
@@ -134,11 +139,11 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_plate_identifier_exception(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image,
-        sample_vehicle_details
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any,
+        sample_vehicle_details: Any
+    ) -> Any:
         """Test recognize method when plate identifier raises exception"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
@@ -154,10 +159,10 @@ class TestVehicleRecognizer:
     @pytest.mark.asyncio
     async def test_recognize_edge_case_empty_vehicle_details(
         self,
-        mock_vehicle_identifier,
-        mock_plate_identifier,
-        sample_image
-    ):
+        mock_vehicle_identifier: Any,
+        mock_plate_identifier: Any,
+        sample_image: Any
+    ) -> Any:
         """Test recognize method with edge case of empty vehicle details"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = None

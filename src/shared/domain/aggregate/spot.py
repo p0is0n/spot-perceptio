@@ -1,9 +1,7 @@
-from dataclasses import dataclass
-
+from shared.domain.aggregate.base import Aggregate
 from shared.domain.vo.base import Id
-from shared.domain.vo.coordinate import BoundingBox
+from shared.domain.vo.coordinate import Polygon
 
-@dataclass(frozen=True)
-class Spot:
+class Spot(Aggregate):
     id: Id
-    coordinate: BoundingBox
+    coordinate: Polygon

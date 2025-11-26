@@ -1,15 +1,17 @@
 # pylint: disable=redefined-outer-name
+from typing import Any
+
 import pytest
 
 from shared.domain.vo.base import Id
 from shared.domain.aggregate.spot import Spot
-from shared.domain.vo.coordinate import BoundingBox, Coordinate
+from shared.domain.vo.coordinate import Polygon, Coordinate
 
 from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails
 from parking.domain.enum.vehicle import VehicleType
 from parking.domain.enum.color import Color
 
-def create_spots(count: int, prefix_id: str = "test-spot"):
+def create_spots(count: int, prefix_id: str = "test-spot") -> Any:
     spots = []
 
     for i in range(count):
@@ -18,12 +20,17 @@ def create_spots(count: int, prefix_id: str = "test-spot"):
         y1 = 10.0 + (i * 50.0)
         x2 = x1 + 40.0
         y2 = y1 + 40.0
+        x3 = x2 + 80.0
+        y3 = y2 + 80.0
 
         spots.append(Spot(
-            id=Id(spot_id),
-            coordinate=BoundingBox(
-                p1=Coordinate(x=x1, y=y1),
-                p2=Coordinate(x=x2, y=y2)
+            id=Id(value=spot_id),
+            coordinate=Polygon(
+                corners=(
+                    Coordinate(x=x1, y=y1),
+                    Coordinate(x=x2, y=y2),
+                    Coordinate(x=x3, y=y3),
+                )
             )
         ))
 
@@ -31,16 +38,17 @@ def create_spots(count: int, prefix_id: str = "test-spot"):
 
 
 @pytest.fixture
-def dynamic_spots():
+def dynamic_spots() -> Any:
     return create_spots
 
+
 @pytest.fixture
-def sample_spot():
+def sample_spot() -> Any:
     return create_spots(1)[0]
 
 
 @pytest.fixture
-def sample_vehicle(sample_image, sample_vehicle_details, sample_plate):
+def sample_vehicle(sample_image: Any, sample_vehicle_details: Any, sample_plate: Any) -> Any:
     return Vehicle(
         image=sample_image,
         details=sample_vehicle_details,
@@ -49,7 +57,7 @@ def sample_vehicle(sample_image, sample_vehicle_details, sample_plate):
 
 
 @pytest.fixture
-def sample_vehicle_without_plate(sample_image, sample_vehicle_details):
+def sample_vehicle_without_plate(sample_image: Any, sample_vehicle_details: Any) -> Any:
     return Vehicle(
         image=sample_image,
         details=sample_vehicle_details,
@@ -58,7 +66,7 @@ def sample_vehicle_without_plate(sample_image, sample_vehicle_details):
 
 
 @pytest.fixture
-def sample_vehicle_details():
+def sample_vehicle_details() -> Any:
     return VehicleDetails(
         type=VehicleType.CAR,
         color=Color.BLUE

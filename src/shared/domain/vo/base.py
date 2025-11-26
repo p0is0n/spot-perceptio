@@ -1,21 +1,12 @@
-from dataclasses import dataclass
 from abc import ABC
+from typing import Annotated
 
-from shared.domain.exception.base import ValidationError
+from pydantic import BaseModel, ConfigDict
+from pydantic.types import StringConstraints
 
-class ValueObject(ABC):
-    """
-    Base class for value objects
-    """
+class ValueObject(BaseModel, ABC):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True, extra="forbid")
 
 
-@dataclass(frozen=True)
 class Id(ValueObject):
-    value: str
-
-    def __post_init__(self):
-        if not self.value or not self.value.strip():
-            raise ValidationError("ID cannot be empty")
-
-    def __str__(self) -> str:
-        return self.value
+    value: Annotated[str, StringConstraints(min_length=1)]

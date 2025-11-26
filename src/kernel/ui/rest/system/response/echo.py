@@ -1,6 +1,8 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import Field
 
-class EchoResponse(BaseModel):
+from kernel.ui.rest.base.response import BaseResponse
+
+class EchoResponse(BaseResponse):
     echo: str
-    time: datetime
+    time: datetime = Field(strict=True)

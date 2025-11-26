@@ -1,15 +1,15 @@
 from enum import Enum
-from pydantic import BaseModel
+from shared.application.dto.base import Base
 
 class MessageRole(Enum):
     USER = "user"
     ASSISTANT = "assistant"
 
 
-class MessageContent(BaseModel):
+class MessageContent(Base):
     type: str
 
 
-class Message(BaseModel):
+class Message(Base):
     role: MessageRole
     content: list[MessageContent]
