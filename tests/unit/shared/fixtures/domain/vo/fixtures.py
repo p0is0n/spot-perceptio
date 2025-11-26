@@ -22,6 +22,7 @@ def sample_coordinate_polygon(faker: Faker) -> Any:
             Coordinate(x=faker.random_int(1, 50), y=faker.random_int(1, 50)),
             Coordinate(x=faker.random_int(1, 50), y=faker.random_int(1, 50)),
             Coordinate(x=faker.random_int(1, 50), y=faker.random_int(1, 50)),
+            Coordinate(x=faker.random_int(1, 50), y=faker.random_int(1, 50)),
         )
     )
 

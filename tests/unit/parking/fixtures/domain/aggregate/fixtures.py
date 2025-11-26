@@ -22,6 +22,8 @@ def create_spots(count: int, prefix_id: str = "test-spot") -> Any:
         y2 = y1 + 40.0
         x3 = x2 + 80.0
         y3 = y2 + 80.0
+        x4 = x3 + 90.0
+        y4 = y3 + 9.0
 
         spots.append(Spot(
             id=Id(value=spot_id),
@@ -30,6 +32,7 @@ def create_spots(count: int, prefix_id: str = "test-spot") -> Any:
                     Coordinate(x=x1, y=y1),
                     Coordinate(x=x2, y=y2),
                     Coordinate(x=x3, y=y3),
+                    Coordinate(x=x4, y=y4),
                 )
             )
         ))
