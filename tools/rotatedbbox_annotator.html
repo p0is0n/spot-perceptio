@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rotated Bounding Box Annotation Tool</title>
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 20px;
+    background: #f5f5f5;
+  }
+
+  #canvas {
+    border: 1px solid #aaa;
+    background: white;
+    cursor: crosshair;
+  }
+
+  #toolbar {
+    margin-bottom: 12px;
+  }
+
+  #output {
+    margin-top: 20px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+</style>
+</head>
+<body>
+
+<h2>Rotated Bounding Box Annotation Tool</h2>
+
+<div id="toolbar">
+  <input type="file" id="fileInput" accept="image/*">
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div id="editor-container">
+  <h3>Result JSON</h3>
+  <div contenteditable="true" id="output">{}</div>
+</div>
+
+<script>
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let img = new Image();
+let imgLoaded = false;
+
+let scale = 1;
+let originalWidth = 0;
+let originalHeight = 0;
+
+let rect = {
+  cx: 0,
+  cy: 0,
+  w: 50,
+  h: 50,
+  angle: 0
+};
+
+let dragging = false;
+let resizing = false;
+let rotateMode = false;
+let selectedHandle = null;
+
+let altPressed = false;
+let lastMouse = { x: 0, y: 0 };
+
+// Resize handle size
+const HANDLE_SIZE = 10;
+
+window.addEventListener("keydown", e => { if (e.key === "Alt") altPressed = true; });
+window.addEventListener("keyup", e => { if (e.key === "Alt") altPressed = false; });
+
+document.getElementById("fileInput").addEventListener("change", loadImage);
+
+function loadImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    img.src = ev.target.result;
+    img.onload = function() {
+      imgLoaded = true;
+      originalWidth = img.width;
+      originalHeight = img.height;
+
+      fitCanvas();
+      rect.cx = canvas.width / 2;
+      rect.cy = canvas.height / 2;
+
+      draw();
+      updateJSON();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function fitCanvas() {
+  const maxW = window.innerWidth * 0.9;
+  const maxH = window.innerHeight * 0.7;
+
+  scale = Math.min(maxW / img.width, maxH / img.height, 1);
+
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+}
+
+function draw() {
+  if (!imgLoaded) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  drawRotatedRect(rect.cx, rect.cy, rect.w, rect.h, rect.angle);
+  drawHandles();
+}
+
+function drawRotatedRect(cx, cy, w, h, angleDeg) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angleDeg * Math.PI / 180);
+
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = "#00ff00";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-w/2, -h/2, w, h);
+
+  ctx.restore();
+}
+
+function drawHandles() {
+  const pts = getRectPoints();
+
+  ctx.fillStyle = "yellow";
+  pts.forEach(p => {
+    ctx.fillRect(p.x - HANDLE_SIZE/2, p.y - HANDLE_SIZE/2, HANDLE_SIZE, HANDLE_SIZE);
+    ctx.strokeRect(p.x - HANDLE_SIZE/2, p.y - HANDLE_SIZE/2, HANDLE_SIZE, HANDLE_SIZE);
+  });
+}
+
+function getRectPoints() {
+  let pts = [];
+  const angle = rect.angle * Math.PI / 180;
+  const w2 = rect.w / 2;
+  const h2 = rect.h / 2;
+
+  const corners = [
+    { x: -w2, y: -h2 },
+    { x: w2, y: -h2 },
+    { x: w2, y: h2 },
+    { x: -w2, y: h2 }
+  ];
+
+  corners.forEach(c => {
+    const x = rect.cx + c.x * Math.cos(angle) - c.y * Math.sin(angle);
+    const y = rect.cy + c.x * Math.sin(angle) + c.y * Math.cos(angle);
+    pts.push({ x, y });
+  });
+
+  return pts;
+}
+
+canvas.addEventListener("mousedown", e => {
+  if (!imgLoaded) return;
+
+  const mouse = getMouse(e);
+  lastMouse = mouse;
+
+  const handle = hitHandle(mouse.x, mouse.y);
+  if (handle !== null) {
+    resizing = true;
+    selectedHandle = handle;
+    return;
+  }
+
+  if (altPressed) {
+    rotateMode = true;
+    return;
+  }
+
+  dragging = true;
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!imgLoaded) return;
+  const mouse = getMouse(e);
+  const dx = mouse.x - lastMouse.x;
+  const dy = mouse.y - lastMouse.y;
+
+  if (resizing) {
+    resizeBBox(selectedHandle, dx, dy);
+  } else if (rotateMode) {
+    rotateBBox(mouse);
+  } else if (dragging) {
+    rect.cx += dx;
+    rect.cy += dy;
+  }
+
+  lastMouse = mouse;
+  draw();
+  updateJSON();
+});
+
+canvas.addEventListener("mouseup", () => {
+  dragging = false;
+  resizing = false;
+  rotateMode = false;
+  selectedHandle = null;
+});
+
+function hitHandle(x, y) {
+  const pts = getRectPoints();
+  for (let i = 0; i < pts.length; i++) {
+    if (Math.abs(x - pts[i].x) < HANDLE_SIZE &&
+        Math.abs(y - pts[i].y) < HANDLE_SIZE) {
+      return i;
+    }
+  }
+  return null;
+}
+
+function resizeBBox(handleIndex, dx, dy) {
+  const pts = getRectPoints();
+  let opp = pts[(handleIndex + 2) % 4];
+
+  // Work in screen space (simpler)
+  pts[handleIndex].x += dx;
+  pts[handleIndex].y += dy;
+
+  const newW = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  const newH = Math.hypot(pts[1].x - pts[2].x, pts[1].y - pts[2].y);
+
+  rect.w = newW;
+  rect.h = newH;
+
+  rect.cx = (pts[handleIndex].x + opp.x) / 2;
+  rect.cy = (pts[handleIndex].y + opp.y) / 2;
+}
+
+function rotateBBox(mouse) {
+  const dx = mouse.x - rect.cx;
+  const dy = mouse.y - rect.cy;
+  rect.angle = Math.atan2(dy, dx) * 180 / Math.PI;
+}
+
+function getMouse(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - r.left,
+    y: e.clientY - r.top
+  };
+}
+
+let skipEditorUpdate = false;
+const output = document.getElementById("output");
+
+function updateJSON() {
+  const scaleInv = 1 / scale;
+  const out = {
+    cx: Math.round(rect.cx * scaleInv),
+    cy: Math.round(rect.cy * scaleInv),
+    width: Math.round(rect.w * scaleInv),
+    height: Math.round(rect.h * scaleInv),
+    angle: rect.angle
+  };
+
+  if (!skipEditorUpdate) {
+    output.textContent = JSON.stringify(out, null, 2);
+  }
+}
+
+output.addEventListener("input", () => {
+  const text = output.textContent.trim();
+  try {
+    const json = JSON.parse(text);
+
+    if (
+      typeof json.cx === "number" &&
+      typeof json.cy === "number" &&
+      typeof json.width === "number" &&
+      typeof json.height === "number" &&
+      typeof json.angle === "number"
+    ) {
+      skipEditorUpdate = true;
+
+      rect.cx = json.cx * scale;
+      rect.cy = json.cy * scale;
+      rect.w = json.width * scale;
+      rect.h = json.height * scale;
+      rect.angle = json.angle;
+
+      output.style.borderColor = "green";
+      draw();
+
+      skipEditorUpdate = false;
+    }
+  } catch (e) {
+    output.style.borderColor = "red";
+  }
+});
+
+</script>
+
+</body>
+</html>
