@@ -13,8 +13,12 @@ Dockerfile.test
 **/__pycache__/
 **/*.py[cod]
 
-.DS_Store
+**/.DS_Store
+**/.DS_Store/**
+
 .editorconfig
 *.code-workspace
 .vscode
 .devcontainer
+
+Thumbs.db
