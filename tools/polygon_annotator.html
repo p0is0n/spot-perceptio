@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Polygon Annotation Tool</title>
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 20px;
+    background: #f5f5f5;
+  }
+
+  #canvas {
+    border: 1px solid #aaa;
+    background: white;
+    cursor: crosshair;
+  }
+
+  #toolbar {
+    margin-bottom: 12px;
+  }
+
+  #output {
+    margin-top: 20px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+
+  .point {
+    width: 8px;
+    height: 8px;
+    background: yellow;
+    border: 1px solid black;
+  }
+</style>
+</head>
+<body>
+
+<h2>Polygon Annotation Tool</h2>
+
+<div id="toolbar">
+  <input type="file" id="fileInput" accept="image/*">
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div id="editor-container">
+  <h3>Result JSON</h3>
+  <div contenteditable="true" id="output">{}</div>
+</div>
+
+<script>
+
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let img = new Image();
+let imgLoaded = false;
+
+let scale = 1;
+let originalWidth = 0;
+let originalHeight = 0;
+
+// Polygon points (screen coordinates)
+let points = [];  
+
+// Interaction state
+let draggingPoint = null;
+let draggingPolygon = false;
+let lastMouse = {x: 0, y: 0};
+
+document.getElementById("fileInput").addEventListener("change", loadImage);
+
+function loadImage(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    img.src = ev.target.result;
+    img.onload = function() {
+      imgLoaded = true;
+      originalWidth = img.width;
+      originalHeight = img.height;
+
+      fitCanvas();
+      draw();
+      updateJSON();
+    };
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function fitCanvas() {
+  const maxW = window.innerWidth * 0.9;
+  const maxH = window.innerHeight * 0.7;
+
+  scale = Math.min(maxW / img.width, maxH / img.height, 1);
+
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+}
+
+function getMouse(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - r.left,
+    y: e.clientY - r.top
+  };
+}
+
+function dist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function draw() {
+  if (!imgLoaded) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // Draw polygon lines
+  if (points.length >= 2) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+
+    // If closed polygon
+    if (polygonClosed()) {
+      ctx.lineTo(points[0].x, points[0].y);
+    }
+
+    ctx.strokeStyle = "#00ff00";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Draw points
+  ctx.fillStyle = "yellow";
+  ctx.strokeStyle = "black";
+  points.forEach(p => {
+    ctx.fillRect(p.x - 4, p.y - 4, 8, 8);
+    ctx.strokeRect(p.x - 4, p.y - 4, 8, 8);
+  });
+}
+
+function polygonClosed() {
+  return points.length >= 3;
+}
+
+canvas.addEventListener("mousedown", e => {
+  if (!imgLoaded) return;
+
+  const mouse = getMouse(e);
+  lastMouse = mouse;
+
+  // Check if clicked on a point (drag point)
+  for (let p of points) {
+    if (dist(mouse, p) < 8) {
+      draggingPoint = p;
+      return;
+    }
+  }
+
+  // If polygon exists and click is inside → drag whole polygon
+  if (polygonClosed() && pointInsidePolygon(mouse, points)) {
+    draggingPolygon = true;
+    return;
+  }
+
+  // Add point
+  points.push({x: mouse.x, y: mouse.y});
+  draw();
+  updateJSON();
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!imgLoaded) return;
+  const mouse = getMouse(e);
+
+  // Drag a point
+  if (draggingPoint) {
+    draggingPoint.x = mouse.x;
+    draggingPoint.y = mouse.y;
+    draw();
+    updateJSON();
+    return;
+  }
+
+  // Drag whole polygon
+  if (draggingPolygon) {
+    const dx = mouse.x - lastMouse.x;
+    const dy = mouse.y - lastMouse.y;
+
+    for (let p of points) {
+      p.x += dx;
+      p.y += dy;
+    }
+
+    draw();
+    updateJSON();
+  }
+
+  lastMouse = mouse;
+});
+
+canvas.addEventListener("dblclick", e => {
+  const mouse = getMouse(e);
+  removeNearestPoint(mouse);
+});
+
+canvas.addEventListener("mouseup", () => {
+  draggingPoint = null;
+  draggingPolygon = false;
+});
+
+function removeNearestPoint(mouse) {
+  if (points.length <= 3) return; // keep valid polygon
+
+  let minDist = Infinity;
+  let idx = -1;
+
+  points.forEach((p, i) => {
+    const d = dist(mouse, p);
+    if (d < minDist) {
+      minDist = d;
+      idx = i;
+    }
+  });
+
+  if (idx >= 0 && minDist < 15) points.splice(idx, 1);
+
+  draw();
+  updateJSON();
+}
+
+function pointInsidePolygon(pt, polygon) {
+  const poly = polygon.map(o => [o.x, o.y]);
+  return cvPointInPolygon(pt.x, pt.y, poly);
+}
+
+// Ray casting algorithm
+function cvPointInPolygon(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    let xi = poly[i][0], yi = poly[i][1];
+    let xj = poly[j][0], yj = poly[j][1];
+
+    let intersect = ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+const output = document.getElementById("output");
+let skipEditorUpdate = false;
+
+// Update JSON from polygon
+function updateJSON() {
+  if (skipEditorUpdate) return;
+
+  const inv = 1 / scale;
+  const json = {
+    points: points.map(p => ({
+      x: Math.round(p.x * inv),
+      y: Math.round(p.y * inv)
+    }))
+  };
+
+  output.textContent = JSON.stringify(json, null, 2);
+}
+
+// Update polygon from manual JSON edit
+output.addEventListener("input", () => {
+  const text = output.textContent.trim();
+
+  try {
+    const json = JSON.parse(text);
+    if (!json.points) return;
+
+    skipEditorUpdate = true;
+
+    points = json.points.map(p => ({
+      x: p.x * scale,
+      y: p.y * scale
+    }));
+
+    output.classList.remove("error");
+    output.classList.add("success");
+
+    draw();
+    skipEditorUpdate = false;
+
+  } catch (err) {
+    output.classList.remove("success");
+    output.classList.add("error");
+  }
+});
+
+</script>
+
+</body>
+</html>
