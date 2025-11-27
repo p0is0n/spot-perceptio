@@ -3,6 +3,7 @@ from dishka import provide
 from di.container.dishka.providers.provider import Provider
 
 from shared.domain.factory.dt import DateTimeFactory
+from shared.domain import config
 
 from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 from shared.application.factory.image import ImageFactory
@@ -41,5 +42,11 @@ class SharedProvider(Provider):
     )
 
     @provide(override=False)
-    def make_ml_detection_provider(self) -> MLDetectionProvider:
-        return YOLOMLDetectionProvider("/app/models/yolo/yolo11n.pt")
+    def make_config_ml(self) -> config.ML:
+        return config.ML()
+
+    @provide(override=False)
+    def make_ml_detection_provider(self, config_ml: config.ML) -> MLDetectionProvider:
+        return YOLOMLDetectionProvider(
+            str(config_ml.yolo_detection_model_path)
+        )

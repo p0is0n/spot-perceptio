@@ -10,7 +10,8 @@ dependencies = [
     "opencv-python (>=4.12)",
     "opencv-contrib-python (>=4.12)",
     "openai (>=2.3.0)",
-    "dishka (>=1.7)"
+    "dishka (>=1.7)",
+    "pydantic-settings (>=2.12)"
 ]
 
 [dependency-groups]
