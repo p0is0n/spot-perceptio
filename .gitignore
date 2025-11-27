@@ -15,7 +15,6 @@ ENV/
 
 # pipenv, poetry, pip tools
 Pipfile.lock
-poetry.lock
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints

@@ -7,6 +7,9 @@ D=docker
 # Control container
 #
 
+build-container:
+	@$(D) build -t $(NAME) -f Dockerfile .
+
 build-container-dev:
 	@$(D) build -t $(NAME) -f Dockerfile.dev .
 
@@ -31,13 +34,13 @@ clean-container:
 # Control local
 #
 
+run-rest:
+	@uvicorn $(APP_REST)
+
 run-rest-dev:
 	@uvicorn $(APP_REST) --reload --log-level=debug
 
 run-rest-test:
-	@uvicorn $(APP_REST)
-
-run-rest-prod:
 	@uvicorn $(APP_REST)
 
 clean-cache:
