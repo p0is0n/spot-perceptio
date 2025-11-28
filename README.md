@@ -1,4 +1,4 @@
-# Spot Perception
+# Spot Perceptio
 
 A lightweight image perception service based on Python, FastAPI, Uvicorn, and UltraLytics.
 
