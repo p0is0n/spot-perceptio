@@ -36,6 +36,8 @@
     border: 1px solid black;
   }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
 </head>
 <body>
 
@@ -48,7 +50,12 @@
 <canvas id="canvas"></canvas>
 
 <div id="editor-container">
-  <h3>Result JSON</h3>
+  <h3>Result</h3>
+  <select id="formatSelect">
+    <option value="json">JSON</option>
+    <option value="yaml">YAML</option>
+  </select>
+
   <div contenteditable="true" id="output">{}</div>
 </div>
 
@@ -88,7 +95,7 @@ function loadImage(e) {
 
       fitCanvas();
       draw();
-      updateJSON();
+      updateResult();
     };
   };
 
@@ -178,7 +185,7 @@ canvas.addEventListener("mousedown", e => {
   // Add point
   points.push({x: mouse.x, y: mouse.y});
   draw();
-  updateJSON();
+  updateResult();
 });
 
 canvas.addEventListener("mousemove", e => {
@@ -190,7 +197,7 @@ canvas.addEventListener("mousemove", e => {
     draggingPoint.x = mouse.x;
     draggingPoint.y = mouse.y;
     draw();
-    updateJSON();
+    updateResult();
     return;
   }
 
@@ -205,7 +212,7 @@ canvas.addEventListener("mousemove", e => {
     }
 
     draw();
-    updateJSON();
+    updateResult();
   }
 
   lastMouse = mouse;
@@ -238,7 +245,7 @@ function removeNearestPoint(mouse) {
   if (idx >= 0 && minDist < 15) points.splice(idx, 1);
 
   draw();
-  updateJSON();
+  updateResult();
 }
 
 function pointInsidePolygon(pt, polygon) {
@@ -263,32 +270,46 @@ function cvPointInPolygon(x, y, poly) {
 const output = document.getElementById("output");
 let skipEditorUpdate = false;
 
-// Update JSON from polygon
-function updateJSON() {
+function updateResult() {
   if (skipEditorUpdate) return;
 
   const inv = 1 / scale;
-  const json = {
+  const result = {
     points: points.map(p => ({
       x: Math.round(p.x * inv),
       y: Math.round(p.y * inv)
     }))
   };
 
-  output.textContent = JSON.stringify(json, null, 2);
+  const format = document.getElementById("formatSelect").value;
+  if (format === "json") {
+    output.textContent = JSON.stringify(result, null, 2);
+  } else {
+    output.textContent = jsyaml.dump(result, {
+        quotingType: '"',
+        forceQuotes: false,
+        noCompatMode: true
+    });
+  }
 }
 
-// Update polygon from manual JSON edit
 output.addEventListener("input", () => {
+  const mode = document.getElementById("formatSelect").value;
   const text = output.textContent.trim();
 
   try {
-    const json = JSON.parse(text);
-    if (!json.points) return;
+    let result;
+    if (mode === "json") {
+      result = JSON.parse(text);
+    } else {
+      result = jsyaml.load(text);
+    }
+
+    if (!result || !result.points) return;
 
     skipEditorUpdate = true;
 
-    points = json.points.map(p => ({
+    points = result.points.map(p => ({
       x: p.x * scale,
       y: p.y * scale
     }));
@@ -303,6 +324,10 @@ output.addEventListener("input", () => {
     output.classList.remove("success");
     output.classList.add("error");
   }
+});
+
+document.getElementById("formatSelect").addEventListener("change", () => {
+  updateResult();
 });
 
 </script>
