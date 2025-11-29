@@ -1,4 +1,4 @@
-from pydantic import FilePath
+from pydantic import PositiveFloat
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Ml(BaseSettings):
@@ -8,4 +8,4 @@ class Ml(BaseSettings):
         validation_error_cause=True
     )
 
-    yolo_detection_model_path: FilePath
+    vehicle_identifier_threshold: PositiveFloat

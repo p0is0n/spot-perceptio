@@ -1,11 +1,11 @@
-from pydantic import FilePath
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-class Ml(BaseSettings):
+class APP(BaseSettings):
     model_config = SettingsConfigDict(
         frozen=True,
-        env_prefix='ml_',
+        env_prefix='app_',
         validation_error_cause=True
     )
 
-    yolo_detection_model_path: FilePath
+    debug: bool = False
+ 

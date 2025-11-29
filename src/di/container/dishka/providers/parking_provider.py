@@ -2,19 +2,20 @@ from dishka import provide, provide_all
 
 from di.container.dishka.providers.provider import Provider
 
-from shared.application.service.ml.provider.detection import MLDetectionProvider
+from shared.application.service.ml.provider.detection import MlDetectionProvider
 
 from parking.domain.service.spot.analyzer import SpotAnalyzer
 from parking.domain.service.vehicle.recognizer import VehicleRecognizer
 from parking.domain.provider.vehicle.identifier import VehicleIdentifier
 from parking.domain.provider.plate.identifier import PlateIdentifier
 
+from parking.application import config
 from parking.application.factory.contract import ContractFactory
 from parking.application.factory.contract_income import ContractIncomeFactory
 from parking.application.handler import analyze_spot
 
 from parking.infrastructure.provider.vehicle.ml_detection_identifier import (
-    MLDetectionVehicleIdentifier
+    MlDetectionVehicleIdentifier
 )
 from parking.infrastructure.provider.plate.identifier import DefaultPlateIdentifier
 
@@ -54,8 +55,16 @@ class ParkingProvider(Provider):
     )
 
     @provide(override=False)
+    def make_config_ml(self) -> config.Ml:
+        return config.Ml()
+
+    @provide(override=False)
     def make_vehicle_identifier(
         self,
-        provider: MLDetectionProvider
+        provider: MlDetectionProvider,
+        config_ml: config.Ml
     ) -> VehicleIdentifier:
-        return MLDetectionVehicleIdentifier(provider)
+        return MlDetectionVehicleIdentifier(
+            provider,
+            config_ml.vehicle_identifier_threshold
+        )
