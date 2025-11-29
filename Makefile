@@ -3,6 +3,11 @@ APP_REST:=src.app.rest.main:app
 
 D=docker
 
+ifneq ("$(wildcard .env)","")
+	include .env
+	export
+endif
+
 #
 # Control container
 #
@@ -35,13 +40,13 @@ clean-container:
 #
 
 run-rest:
-	@uvicorn $(APP_REST)
+	@uvicorn $(APP_REST) --port $(APP_PORT) --log-level=$(APP_LOG_LEVEL)
 
 run-rest-dev:
-	@uvicorn $(APP_REST) --reload --log-level=debug
+	@uvicorn $(APP_REST) --port $(APP_PORT) --reload --log-level=$(APP_LOG_LEVEL)
 
 run-rest-test:
-	@uvicorn $(APP_REST)
+	@uvicorn $(APP_REST) --port $(APP_PORT) --log-level=$(APP_LOG_LEVEL)
 
 clean-cache:
 	@find . -type d -name '__pycache__' -exec rm -rf {} +
