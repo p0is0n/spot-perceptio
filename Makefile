@@ -3,8 +3,10 @@ APP_REST:=src.app.rest.main:app
 
 D=docker
 
-include .env
-export
+ifneq ("$(wildcard .env)","")
+	include .env
+	export
+endif
 
 #
 # Control container
