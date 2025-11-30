@@ -1,3 +1,4 @@
+from shared.domain.vo.coordinate import Polygon
 from shared.domain.aggregate.image import Image
 
 from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails
@@ -14,8 +15,13 @@ class VehicleRecognizer:
         self._vehicle_identifier = vehicle_identifier
         self._plate_identifier = plate_identifier
 
-    async def recognize(self, image: Image, /) -> Vehicle | None:
-        vehicle_details = await self._vehicle_identifier.identify(image)
+    async def recognize(
+        self,
+        image: Image,
+        coordinate: Polygon,
+        /
+    ) -> Vehicle | None:
+        vehicle_details = await self._vehicle_identifier.identify(image, coordinate)
         if vehicle_details is None:
             return None
 

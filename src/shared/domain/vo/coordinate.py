@@ -1,4 +1,7 @@
+import math
+
 from pydantic import NonNegativeInt, Field
+
 from shared.domain.vo.base import ValueObject
 
 class Coordinate(ValueObject):
@@ -55,9 +58,74 @@ class RotatedBoundingBox(ValueObject):
     def size(self) -> tuple[int, int]:
         return int(self.width), int(self.height)
 
+    @property
+    def radians(self) -> float:
+        return math.radians(self.angle)
+
+    @property
+    def x1(self) -> int:
+        return self._xy1(0)
+
+    @property
+    def y1(self) -> int:
+        return self._xy1(1)
+
+    @property
+    def x2(self) -> int:
+        return self._xy2(0)
+
+    @property
+    def y2(self) -> int:
+        return self._xy2(1)
+
+    @property
+    def _corners(self) -> list[tuple[float, float]]:
+        cx, cy = float(self.center.x), float(self.center.y)
+        w, h = self.width / 2.0, self.height / 2.0
+
+        cos_a = math.cos(self.radians)
+        sin_a = math.sin(self.radians)
+
+        local = [
+            (-w, -h),
+            ( w, -h),
+            ( w,  h),
+            (-w,  h)
+        ]
+
+        result = []
+        for px, py in local:
+            rx = px * cos_a - py * sin_a + cx
+            ry = px * sin_a + py * cos_a + cy
+            result.append((rx, ry))
+
+        return result
+
+    def _xy1(self, index: int) -> int:
+        return math.floor(min(p[index] for p in self._corners))
+
+    def _xy2(self, index: int) -> int:
+        return math.ceil(max(p[index] for p in self._corners))
+
 
 class Polygon(ValueObject):
     corners: tuple[Coordinate, ...] = Field(min_length=4)
+
+    @property
+    def x1(self) -> int:
+        return min(int(c.x) for c in self.corners)
+
+    @property
+    def y1(self) -> int:
+        return min(int(c.y) for c in self.corners)
+
+    @property
+    def x2(self) -> int:
+        return max(int(c.x) for c in self.corners)
+
+    @property
+    def y2(self) -> int:
+        return max(int(c.y) for c in self.corners)
 
     def to_tuple_list(self) -> list[tuple[int, int]]:
         return [corner.to_tuple() for corner in self.corners]
