@@ -1,5 +1,4 @@
 from shared.domain.aggregate.base import Aggregate
-from shared.domain.aggregate.image import Image
 
 from parking.domain.vo.plate import Plate
 from parking.domain.enum.color import Color
@@ -11,6 +10,5 @@ class VehicleDetails(Aggregate):
 
 
 class Vehicle(Aggregate):
-    image: Image
     details: VehicleDetails
     plate: Plate | None = None

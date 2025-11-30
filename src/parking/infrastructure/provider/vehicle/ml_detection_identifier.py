@@ -1,3 +1,7 @@
+import cv2
+import numpy as np
+
+from shared.domain.vo.coordinate import BoundingBox, RotatedBoundingBox, Polygon
 from shared.domain.aggregate.image import Image
 from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.application.service.ml.dto import detection
@@ -20,21 +24,37 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         self._provider = provider
         self._threshold = threshold
 
-    async def identify(self, image: Image, /) -> VehicleDetails | None:
+    async def identify(
+        self,
+        image: Image,
+        coordinate: Polygon,
+        /
+    ) -> VehicleDetails | None:
         response = await self._provider.predict(detection.Request(
-            source=image
+            source=image,
+            image_size=self._imgsz
         ))
-        result = await self._process_response(response)
+        result = await self._process_response(coordinate, response)
 
         return result
 
-    async def _process_response(self, response: detection.Response) -> VehicleDetails | None:
+    async def _process_response(
+        self,
+        coordinate: Polygon,
+        response: detection.Response,
+        /
+    ) -> VehicleDetails | None:
         if len(response.boxes) == 0:
             return None
+
+        print(response)
 
         vehicles: list[VehicleDetails] = []
         for box in response.boxes:
             if box.score < self._threshold:
+                continue
+
+            if not self._box_in_coordinate(box, coordinate):
                 continue
 
             vehicle = VehicleDetails(
@@ -45,10 +65,36 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
                 continue
 
             vehicles.append(vehicle)
-            if len(vehicles) > 1:
-                raise ValueError("Multiple vehicle detections found.")
 
         if len(vehicles) == 1:
             return vehicles[0]
 
+        if len(vehicles) > 1:
+            raise ValueError("Multiple vehicles detected in the specified area.")
+
         return None
+
+    def _box_in_coordinate(
+        self,
+        box: detection.Box,
+        coordinate: Polygon,
+        /
+    ) -> bool:
+        polygon = self._coordinate_to_polygon(coordinate)
+        if isinstance(box.coordinate, (BoundingBox, RotatedBoundingBox, Polygon)):
+            cx = (box.coordinate.x1 + box.coordinate.x2) / 2
+            cy = (box.coordinate.y1 + box.coordinate.y2) / 2
+        else:
+            raise NotImplementedError("Unsupported box coordinate type.")
+
+        return cv2.pointPolygonTest(polygon, (cx, cy), False) >= 0
+
+    def _coordinate_to_polygon(
+        self,
+        coordinate: Polygon,
+        /
+    ) -> np.typing.NDArray[np.float32]:
+        if isinstance(coordinate, Polygon):
+            return np.array(coordinate.to_tuple_list(), dtype=np.int32)
+
+        raise NotImplementedError("Unsupported coordinate type conversion to polygon.")

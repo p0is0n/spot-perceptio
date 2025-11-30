@@ -13,8 +13,10 @@ class SpotAnalyzer:
         self._vehicle_recognizer = vehicle_recognizer
 
     async def analyze(self, image: Image, spot: Spot, /) -> ParkingSpot:
-        spot_image = image.crop(spot.coordinate)
-        vehicle = await self._vehicle_recognizer.recognize(spot_image)
+        vehicle = await self._vehicle_recognizer.recognize(
+            image,
+            spot.coordinate
+        )
 
         return self._make_parking_spot(spot, vehicle)
 
@@ -24,7 +26,7 @@ class SpotAnalyzer:
         vehicle: Vehicle | None,
         /
     ) -> ParkingSpot:
-        occupied = vehicle is not None
+        occupied: bool = vehicle is not None
 
         return ParkingSpot(
             occupied=occupied,
