@@ -1,39 +1,54 @@
 # Spot Perceptio
 
-A lightweight image perception service based on Python, FastAPI, Uvicorn, and UltraLytics.
+Spot Perceptio is an image-processing microservice built with **Python**, **FastAPI**, and **Ultralytics**.
 
----
+The project follows a **Domain-Driven Design (DDD)** architecture to ensure clear domain boundaries, modularity, and maintainability.
 
-## Environment
+## Architecture Overview
 
-Copy and edit the environment file:
+The project is organized according to Domain-Driven Design principles.
+
+This structure allows:
+- clean boundaries  
+- plug-and-play ML backends  
+- easy unit testing  
+- extensibility for new vision tasks  
+- predictable development workflow  
+
+## Installation
+
+### From source
+
+#### Clone the repository:
+
+```sh
+git clone git@github.com:p0is0n/spot-perceptio.git
+```
+
+#### Copy the example environment file:
 
 ```sh
 cp .env.example .env
 ```
 
----
+_You can modify the `.env` file to suit your needs._
 
-## Build
+#### Download a model into a folder:
+```sh
+mkdir -p models/ul
+```
 
+```sh
+curl -L \
+  https://github.com/ultralytics/assets/releases/download/v8.3.0 yolo12s.pt -o models/ul/yolo12s.pt
+```
+
+_You can choose another model (don't forget to update the `.env` file accordingly)._
+
+#### Build and run:
 ```sh
 docker build -t spot-perceptio .
 ```
-
----
-
-## Models
-
-Create a folder for YOLO models and download a model:
-
-```sh
-mkdir -p models
-curl -L https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt -o models/yolo11n.pt
-```
-
----
-
-## Run
 
 ```sh
 docker run -d \
