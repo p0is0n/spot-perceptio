@@ -66,26 +66,25 @@ class TestSpotAnalyzer:
         assert result.vehicle is None
 
     @pytest.mark.asyncio
-    async def test_analyze_crops_image_correctly(
+    async def test_analyze_image_correctly(
         self,
         mock_vehicle_recognizer: Any,
         sample_image: Any,
         sample_spot: Any
     ) -> Any:
-        """Test that analyze method crops image using spot coordinates"""
+        """Test that analyze method image using spot coordinates"""
         analyzer = SpotAnalyzer(mock_vehicle_recognizer)
         mock_vehicle_recognizer.recognize.return_value = None
 
         result = await analyzer.analyze(sample_image, sample_spot)
-
-        sample_image.data.crop.assert_called_once_with(sample_spot.coordinate)
         mock_vehicle_recognizer.recognize.assert_called_once()
 
-        image_cropped = mock_vehicle_recognizer.recognize.call_args.args[0]
+        image = mock_vehicle_recognizer.recognize.call_args.args[0]
+        coordinate = mock_vehicle_recognizer.recognize.call_args.args[1]
 
         assert isinstance(result, ParkingSpot)
-        assert isinstance(image_cropped, Image)
-        assert image_cropped.coordinate == sample_spot.coordinate
+        assert isinstance(image, Image)
+        assert coordinate == sample_spot.coordinate
 
     @pytest.mark.asyncio
     async def test_analyze_handles_recognizer_exception(

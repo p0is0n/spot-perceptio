@@ -17,6 +17,7 @@ from tests.unit.parking.fixtures.domain.service.vehicle.fixtures import (
     mock_plate_identifier
 )
 from tests.unit.parking.fixtures.domain.aggregate.fixtures import (
+    sample_spot,
     sample_vehicle_details,
     sample_vehicle,
     sample_vehicle_without_plate
@@ -33,6 +34,7 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
         sample_image: Any,
+        sample_spot: Any,
         sample_vehicle_details: Any,
         sample_plate: Any
     ) -> Any:
@@ -41,14 +43,16 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
         mock_plate_identifier.identify.return_value = sample_plate
 
-        result = await recognizer.recognize(sample_image)
+        result = await recognizer.recognize(sample_image, sample_spot.coordinate)
 
         assert isinstance(result, Vehicle)
-        assert result.image == sample_image
         assert result.details == sample_vehicle_details
         assert result.plate == sample_plate
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_called_once_with(sample_image)
 
     @pytest.mark.asyncio
@@ -57,6 +61,7 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
         sample_image: Any,
+        sample_spot: Any,
         sample_vehicle_details: Any
     ) -> Any:
         """Test recognize method when vehicle is detected but no plate"""
@@ -64,14 +69,16 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier.identify.return_value = sample_vehicle_details
         mock_plate_identifier.identify.return_value = None
 
-        result = await recognizer.recognize(sample_image)
+        result = await recognizer.recognize(sample_image, sample_spot.coordinate)
 
         assert isinstance(result, Vehicle)
-        assert result.image == sample_image
         assert result.details == sample_vehicle_details
         assert result.plate is None
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_called_once_with(sample_image)
 
     @pytest.mark.asyncio
@@ -79,17 +86,21 @@ class TestVehicleRecognizer:
         self,
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
-        sample_image: Any
+        sample_image: Any,
+        sample_spot: Any
     ) -> Any:
         """Test recognize method when no vehicle is detected"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = None
 
-        result = await recognizer.recognize(sample_image)
+        result = await recognizer.recognize(sample_image, sample_spot.coordinate)
 
         assert result is None
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_not_called()
 
     @pytest.mark.asyncio
@@ -98,6 +109,7 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
         sample_image: Any,
+        sample_spot: Any,
         sample_vehicle_details: Any,
         sample_plate: Any
     ) -> Any:
@@ -108,11 +120,10 @@ class TestVehicleRecognizer:
 
         results = []
         for _ in range(3):
-            results.append(await recognizer.recognize(sample_image))
+            results.append(await recognizer.recognize(sample_image, sample_spot.coordinate))
 
         for result in results:
             assert isinstance(result, Vehicle)
-            assert result.image == sample_image
             assert result.details == sample_vehicle_details
             assert result.plate == sample_plate
 
@@ -124,16 +135,20 @@ class TestVehicleRecognizer:
         self,
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
-        sample_image: Any
+        sample_image: Any,
+        sample_spot: Any
     ) -> Any:
         """Test recognize method when vehicle identifier raises exception"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.side_effect = Exception("Vehicle identification failed")
 
         with pytest.raises(Exception, match="Vehicle identification failed"):
-            await recognizer.recognize(sample_image)
+            await recognizer.recognize(sample_image, sample_spot.coordinate)
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_not_called()
 
     @pytest.mark.asyncio
@@ -142,6 +157,7 @@ class TestVehicleRecognizer:
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
         sample_image: Any,
+        sample_spot: Any,
         sample_vehicle_details: Any
     ) -> Any:
         """Test recognize method when plate identifier raises exception"""
@@ -150,9 +166,12 @@ class TestVehicleRecognizer:
         mock_plate_identifier.identify.side_effect = Exception("Plate identification failed")
 
         with pytest.raises(Exception, match="Plate identification failed"):
-            await recognizer.recognize(sample_image)
+            await recognizer.recognize(sample_image, sample_spot.coordinate)
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_called_once_with(sample_image)
 
 
@@ -161,15 +180,19 @@ class TestVehicleRecognizer:
         self,
         mock_vehicle_identifier: Any,
         mock_plate_identifier: Any,
-        sample_image: Any
+        sample_image: Any,
+        sample_spot: Any
     ) -> Any:
         """Test recognize method with edge case of empty vehicle details"""
         recognizer = VehicleRecognizer(mock_vehicle_identifier, mock_plate_identifier)
         mock_vehicle_identifier.identify.return_value = None
 
-        result = await recognizer.recognize(sample_image)
+        result = await recognizer.recognize(sample_image, sample_spot.coordinate)
 
         assert result is None
 
-        mock_vehicle_identifier.identify.assert_called_once_with(sample_image)
+        mock_vehicle_identifier.identify.assert_called_once_with(
+            sample_image,
+            sample_spot.coordinate
+        )
         mock_plate_identifier.identify.assert_not_called()
