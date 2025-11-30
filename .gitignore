@@ -68,3 +68,6 @@ classes.dot
 *.pid
 *.tar
 docker-compose.override.yml
+
+# Tests
+tests/**/*[.jpg,.jpeg,.png]

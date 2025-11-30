@@ -1,0 +1,32 @@
+--threshold=0.75  --model=yolo12m.pt
+Total checks: 52
+Matches: 52
+Mismatches: 0
+Accuracy: 100.0%
+
+Total time: 31.752 s
+Avg per call: 610.6 ms
+Min: 530.3 ms
+Max: 1004.4 ms
+
+--threshold=0.75  --model=yolo12s.pt
+Total checks: 52
+Matches: 52
+Mismatches: 0
+Accuracy: 100.0%
+
+Total time: 12.866 s
+Avg per call: 247.4 ms
+Min: 164.9 ms
+Max: 490.6 ms
+
+--threshold=0.75  --model=yolo12n.pt
+Total checks: 52
+Matches: 42
+Mismatches: 10
+Accuracy: 80.8%
+
+Total time: 4.805 s
+Avg per call: 92.4 ms
+Min: 64.6 ms
+Max: 236.4 ms

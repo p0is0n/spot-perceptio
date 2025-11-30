@@ -1,0 +1,6 @@
+--threshold=0.45  --model=yolo12m.pt
+Total checks: 50
+Matches: 49
+Mismatches: 1
+Accuracy: 98.0%
+
