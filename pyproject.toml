@@ -24,7 +24,8 @@ dev = [
     "pytest-cov (>=7.0.0)",
     "faker (>=37.12.0)",
     "mypy (>=1.18.2,<2.0.0)",
-    "pydantic[mypy] (>=2.12.4,<3.0.0)"
+    "pydantic[mypy] (>=2.12.4,<3.0.0)",
+    "rich (>=14.2.0,<15.0.0)"
 ]
 
 [build-system]
