@@ -47,8 +47,6 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         if len(response.boxes) == 0:
             return None
 
-        print(response)
-
         vehicles: list[VehicleDetails] = []
         for box in response.boxes:
             if box.score < self._threshold:
@@ -94,7 +92,4 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         coordinate: Polygon,
         /
     ) -> np.typing.NDArray[np.float32]:
-        if isinstance(coordinate, Polygon):
-            return np.array(coordinate.to_tuple_list(), dtype=np.int32)
-
-        raise NotImplementedError("Unsupported coordinate type conversion to polygon.")
+        return np.array(coordinate.to_tuple_list(), dtype=np.int32)
