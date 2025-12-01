@@ -3,6 +3,7 @@ from parking.application.dto.contract.vehicle import Vehicle, VehicleDetails
 from parking.ui.rest.response.analyze_spot import AnalyzeSpotResponse
 from parking.ui.rest.response.spot import ParkingSpotResponse, SpotResponse
 from parking.ui.rest.response.vehicle import VehicleDetailsResponse, VehicleResponse
+from parking.ui.rest.response.plate import PlateResponse
 
 class ContractResponseMapper:
     def make_analyze_spot(
@@ -45,9 +46,13 @@ class ContractResponseMapper:
         /
     ) -> VehicleResponse:
         details = self.make_vehicle_details(vehicle.details)
+        plate = None
+        if vehicle.plate is not None:
+            plate = self.make_plate(vehicle.plate.value, vehicle.plate.country)
 
         return VehicleResponse(
-            details=details
+            details=details,
+            plate=plate
         )
 
     def make_vehicle_details(
@@ -58,4 +63,15 @@ class ContractResponseMapper:
         return VehicleDetailsResponse(
             type=details.type,
             color=details.color
+        )
+
+    def make_plate(
+        self,
+        value: str,
+        country: str,
+        /
+    ) -> PlateResponse:
+        return PlateResponse(
+            value=value,
+            country=country
         )
