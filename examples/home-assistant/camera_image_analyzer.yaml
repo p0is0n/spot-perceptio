@@ -154,7 +154,7 @@ rest_command:
     verify_ssl: false
     timeout: 20
     payload: >
-      {% set ha = "http://http://homeassistant.local:8123/" %}
+      {% set ha = "http://homeassistant.local:8123/" %}
       {% set image_path = states[camera_entity].attributes.entity_picture %}
       {
         "image": {
