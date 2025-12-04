@@ -6,7 +6,7 @@ from shared.domain.aggregate.image import Image
 from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.application.service.ml.dto import detection
 
-from parking.domain.aggregate.vehicle import VehicleDetails
+from parking.domain.aggregate.vehicle import VehicleDetails, VehicleObserved
 from parking.domain.enum.color import Color
 from parking.domain.enum.vehicle import VehicleType
 from parking.domain.provider.vehicle.identifier import VehicleIdentifier
@@ -29,7 +29,7 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         image: Image,
         coordinate: Polygon,
         /
-    ) -> VehicleDetails | None:
+    ) -> VehicleObserved | None:
         response = await self._provider.predict(detection.Request(
             source=image,
             image_size=self._imgsz
@@ -43,11 +43,11 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         coordinate: Polygon,
         response: detection.Response,
         /
-    ) -> VehicleDetails | None:
+    ) -> VehicleObserved | None:
         if len(response.boxes) == 0:
             return None
 
-        vehicles: list[VehicleDetails] = []
+        vehicles: list[VehicleObserved] = []
         for box in response.boxes:
             if box.score < self._threshold:
                 continue
@@ -55,11 +55,8 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
             if not self._box_in_coordinate(box, coordinate):
                 continue
 
-            vehicle = VehicleDetails(
-                type=VehicleType(box.type.value),
-                color=Color.UNKNOWN
-            )
-            if vehicle.type == VehicleType.UNKNOWN:
+            vehicle = self._make_vehicle(box)
+            if vehicle is None:
                 continue
 
             vehicles.append(vehicle)
@@ -71,6 +68,25 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
             raise ValueError("Multiple vehicles detected in the specified area.")
 
         return None
+
+    def _make_vehicle(
+        self,
+        box: detection.Box
+    ) -> VehicleObserved | None:
+        details=VehicleDetails(
+            type=VehicleType(box.type.value),
+            color=Color.UNKNOWN
+        )
+        if details.type == VehicleType.UNKNOWN:
+            return None
+
+        vehicle = VehicleObserved(
+            details=details,
+            coordinate=box.coordinate.to_polygon(),
+            score=box.score
+        )
+
+        return vehicle
 
     def _box_in_coordinate(
         self,

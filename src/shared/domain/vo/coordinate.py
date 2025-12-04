@@ -47,6 +47,16 @@ class BoundingBox(ValueObject):
     def to_tuple(self) -> tuple[int, int, int, int]:
         return self.x1, self.y1, self.x2, self.y2
 
+    def to_polygon(self) -> "Polygon":
+        return Polygon(
+            corners=(
+                Coordinate(x=self.x1, y=self.y1),
+                Coordinate(x=self.x2, y=self.y1),
+                Coordinate(x=self.x2, y=self.y2),
+                Coordinate(x=self.x1, y=self.y2),
+            )
+        )
+
 
 class RotatedBoundingBox(ValueObject):
     center: Coordinate
@@ -77,6 +87,17 @@ class RotatedBoundingBox(ValueObject):
     @property
     def y2(self) -> int:
         return self._xy2(1)
+
+    def to_tuple(self) -> tuple[int, int, int, int]:
+        return self.x1, self.y1, self.x2, self.y2
+
+    def to_polygon(self) -> "Polygon":
+        return Polygon(
+            corners=tuple(
+                Coordinate(x=int(px), y=int(py))
+                for px, py in self._corners
+            )
+        )
 
     @property
     def _corners(self) -> list[tuple[float, float]]:
