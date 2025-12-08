@@ -148,5 +148,21 @@ class Polygon(ValueObject):
     def y2(self) -> int:
         return max(int(c.y) for c in self.corners)
 
+    def shift_by(self, other: "Polygon") -> "Polygon":
+        dx = other.x1
+        dy = other.y1
+
+        corners = tuple(
+            Coordinate(
+                x=c.x + dx,
+                y=c.y + dy
+            )
+            for c in self.corners
+        )
+
+        return Polygon(
+            corners=corners
+        )
+
     def to_tuple_list(self) -> list[tuple[int, int]]:
         return [corner.to_tuple() for corner in self.corners]

@@ -27,14 +27,14 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
     async def identify(
         self,
         image: Image,
-        coordinate: Polygon,
+        spot_coordinate: Polygon,
         /
     ) -> VehicleObserved | None:
         response = await self._provider.predict(detection.Request(
             source=image,
             image_size=self._imgsz
         ))
-        result = await self._process_response(coordinate, response)
+        result = await self._process_response(spot_coordinate, response)
 
         return result
 
@@ -94,7 +94,7 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
         coordinate: Polygon,
         /
     ) -> bool:
-        polygon = self._coordinate_to_polygon(coordinate)
+        polygon = self._coordinate_to_np_polygon(coordinate)
         if isinstance(box.coordinate, (BoundingBox, RotatedBoundingBox, Polygon)):
             cx = (box.coordinate.x1 + box.coordinate.x2) / 2
             cy = (box.coordinate.y1 + box.coordinate.y2) / 2
@@ -103,7 +103,7 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
 
         return cv2.pointPolygonTest(polygon, (cx, cy), False) >= 0
 
-    def _coordinate_to_polygon(
+    def _coordinate_to_np_polygon(
         self,
         coordinate: Polygon,
         /

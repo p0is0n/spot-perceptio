@@ -8,14 +8,12 @@ from shared.application import config
 from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 from shared.application.http.client.protocol import ClientProtocol as HttpClientProtocol
 from shared.application.factory.image import ImageFactory
-from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.application.service.llm.provider import LLMProvider
 
 from shared.infrastructure.factory.tool.worker_pool import DefaultWorkerPoolFactory
 from shared.infrastructure.http.client.httpx_protocol import HttpxClientProtocol
 from shared.infrastructure.factory.dt import DefaultDateTimeFactory
 from shared.infrastructure.factory.image import Cv2ImageFactory
-from shared.infrastructure.service.ml.provider.yolo_provider import YOLOMlDetectionProvider
 from shared.infrastructure.service.llm.provider import OpenAILLMProvider
 
 class SharedProvider(Provider):
@@ -52,11 +50,3 @@ class SharedProvider(Provider):
     @provide(override=False)
     def make_config_ml(self) -> config.Ml:
         return config.Ml()
-
-    @provide(override=False)
-    def make_ml_detection_provider(self, config_ml: config.Ml) -> MlDetectionProvider:
-        return YOLOMlDetectionProvider(
-            str(config_ml.yolo_detection_model_path),
-            config_ml.yolo_detection_model_task,
-            config_ml.yolo_detection_model_device
-        )

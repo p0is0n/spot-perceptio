@@ -9,6 +9,6 @@ class VehicleIdentifier(Protocol):
     async def identify(
         self,
         image: Image,
-        coordinate: Polygon,
+        spot_coordinate: Polygon,
         /
     ) -> VehicleObserved | None: ...

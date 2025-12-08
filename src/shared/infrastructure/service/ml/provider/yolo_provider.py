@@ -13,12 +13,13 @@ from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 class YOLOMlDetectionProvider(MlDetectionProvider):
-    _vehicles_types: dict[int, detection.Type] = {
-        1: detection.Type.BICYCLE,
-        3: detection.Type.MOTORCYCLE,
-        2: detection.Type.CAR,
-        5: detection.Type.BUS,
-        7: detection.Type.TRUCK,
+    _vehicles_types: dict[str, detection.Type] = {
+        "bicycle": detection.Type.BICYCLE,
+        "motorcycle": detection.Type.MOTORCYCLE,
+        "car": detection.Type.CAR,
+        "bus": detection.Type.BUS,
+        "truck": detection.Type.TRUCK,
+        "license_plate": detection.Type.LICENSE_PLATE
     }
 
     def __init__(
@@ -86,9 +87,11 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             box = boxes[box_idx]
             xyxy = box.xyxy.cpu().numpy()[0]
             coordinate = self._to_bounding_box_coordinate(xyxy)
+            class_id = class_ids[box_idx]
+            class_name = results[0].names.get(class_id, "unknown")
 
             response_boxes.append(detection.Box(
-                type=self._to_detection_type(class_ids[box_idx]),
+                type=self._to_detection_type(class_name),
                 score=float(conf_scores[box_idx]),
                 coordinate=coordinate
             ))
@@ -98,9 +101,9 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             boxes=tuple(response_boxes)
         )
 
-    def _to_detection_type(self, class_id: int) -> detection.Type:
+    def _to_detection_type(self, class_name: str) -> detection.Type:
         return self._vehicles_types.get(
-            class_id,
+            class_name.lower(),
             detection.Type.UNKNOWN
         )
 

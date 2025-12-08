@@ -52,7 +52,8 @@ class ContractFactory:
 
         return contract.Vehicle(
             details=vehicle_details,
-            plate=plate
+            plate=plate,
+            coordinate=self.make_polygon_coordinate(vehicle.coordinate)
         )
 
     def make_vehicle_details(self, vehicle_details: VehicleDetails, /) -> contract.VehicleDetails:
@@ -64,5 +65,6 @@ class ContractFactory:
     def make_plate(self, plate: Plate, /) -> contract.Plate:
         return contract.Plate(
             value=plate.value,
-            country=plate.country
+            country=plate.country,
+            coordinate=self.make_polygon_coordinate(plate.coordinate)
         )

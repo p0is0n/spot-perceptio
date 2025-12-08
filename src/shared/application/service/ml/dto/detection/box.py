@@ -10,6 +10,7 @@ class Type(str, Enum):
     TRUCK = "truck"
     BUS = "bus"
     VAN = "van"
+    LICENSE_PLATE = "license_plate"
     UNKNOWN = "unknown"
 
 

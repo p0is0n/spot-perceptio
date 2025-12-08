@@ -18,10 +18,10 @@ class VehicleRecognizer:
     async def recognize(
         self,
         image: Image,
-        coordinate: Polygon,
+        spot_coordinate: Polygon,
         /
     ) -> Vehicle | None:
-        vehicle_observed = await self._vehicle_identifier.identify(image, coordinate)
+        vehicle_observed = await self._vehicle_identifier.identify(image, spot_coordinate)
         if vehicle_observed is None:
             return None
 

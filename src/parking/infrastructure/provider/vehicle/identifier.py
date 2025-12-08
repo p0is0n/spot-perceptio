@@ -8,7 +8,7 @@ class DefaultVehicleIdentifier(VehicleIdentifier):
     async def identify(
         self,
         image: Image,
-        coordinate: Polygon,
+        spot_coordinate: Polygon,
         /
     ) -> VehicleObserved | None:
         return None

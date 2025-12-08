@@ -8,7 +8,7 @@ class DefaultPlateIdentifier(PlateIdentifier):
     async def identify(
         self,
         image: Image,
-        coordinate: Polygon,
+        vehicle_coordinate: Polygon,
         /
     ) -> Plate | None:
         return None

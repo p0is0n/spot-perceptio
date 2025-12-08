@@ -9,6 +9,6 @@ class PlateIdentifier(Protocol):
     async def identify(
         self,
         image: Image,
-        coordinate: Polygon,
+        vehicle_coordinate: Polygon,
         /
     ) -> Plate | None: ...

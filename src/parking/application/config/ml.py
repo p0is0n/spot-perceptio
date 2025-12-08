@@ -1,4 +1,4 @@
-from pydantic import PositiveFloat
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Ml(BaseSettings):
@@ -8,4 +8,8 @@ class Ml(BaseSettings):
         validation_error_cause=True
     )
 
-    vehicle_identifier_threshold: PositiveFloat
+    vehicle_identifier: str
+    vehicle_identifier_threshold: float = Field(gt=0.0, lt=1.0)
+
+    plate_identifier: str
+    plate_identifier_threshold: float = Field(gt=0.0, lt=1.0)

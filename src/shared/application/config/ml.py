@@ -9,5 +9,7 @@ class Ml(BaseSettings):
     )
 
     yolo_detection_model_path: FilePath
+    yolo_license_plate_detection_model_path: FilePath
+
     yolo_detection_model_task: str = "detect"
     yolo_detection_model_device: str | None = None
