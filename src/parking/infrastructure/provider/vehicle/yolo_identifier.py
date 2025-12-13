@@ -11,9 +11,18 @@ from parking.domain.enum.color import Color
 from parking.domain.enum.vehicle import VehicleType
 from parking.domain.provider.vehicle.identifier import VehicleIdentifier
 
-class MlDetectionVehicleIdentifier(VehicleIdentifier):
+class YOLOVehicleIdentifier(VehicleIdentifier):
     _imgsz: int = 640
     _threshold: float
+    _expand_margin: int = 40
+
+    _vehicles_types: dict[str, VehicleType] = {
+        "bicycle": VehicleType.BICYCLE,
+        "motorcycle": VehicleType.MOTORCYCLE,
+        "car": VehicleType.CAR,
+        "bus": VehicleType.BUS,
+        "truck": VehicleType.TRUCK
+    }
 
     def __init__(
         self,
@@ -34,12 +43,13 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
             source=image,
             image_size=self._imgsz
         ))
-        result = await self._process_response(spot_coordinate, response)
+        result = await self._process_response(image, spot_coordinate, response)
 
         return result
 
     async def _process_response(
         self,
+        image: Image,
         coordinate: Polygon,
         response: detection.Response,
         /
@@ -55,7 +65,7 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
             if not self._box_in_coordinate(box, coordinate):
                 continue
 
-            vehicle = self._make_vehicle(box)
+            vehicle = self._make_vehicle(image, box)
             if vehicle is None:
                 continue
 
@@ -71,18 +81,21 @@ class MlDetectionVehicleIdentifier(VehicleIdentifier):
 
     def _make_vehicle(
         self,
-        box: detection.Box
+        image: Image,
+        box: detection.Box,
+        /
     ) -> VehicleObserved | None:
         details=VehicleDetails(
-            type=VehicleType(box.type.value),
+            type=self._vehicles_types.get(box.type.name, VehicleType.UNKNOWN),
             color=Color.UNKNOWN
         )
         if details.type == VehicleType.UNKNOWN:
             return None
 
+        polygon = box.coordinate.to_polygon().expand(self._expand_margin, image.coordinate)
         vehicle = VehicleObserved(
             details=details,
-            coordinate=box.coordinate.to_polygon(),
+            coordinate=polygon,
             score=box.score
         )
 

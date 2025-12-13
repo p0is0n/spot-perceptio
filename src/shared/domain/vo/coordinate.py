@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import math
 
+from functools import cached_property
 from pydantic import NonNegativeInt, Field
 
 from shared.domain.vo.base import ValueObject
@@ -47,7 +50,7 @@ class BoundingBox(ValueObject):
     def to_tuple(self) -> tuple[int, int, int, int]:
         return self.x1, self.y1, self.x2, self.y2
 
-    def to_polygon(self) -> "Polygon":
+    def to_polygon(self) -> Polygon:
         return Polygon(
             corners=(
                 Coordinate(x=self.x1, y=self.y1),
@@ -72,26 +75,26 @@ class RotatedBoundingBox(ValueObject):
     def radians(self) -> float:
         return math.radians(self.angle)
 
-    @property
+    @cached_property
     def x1(self) -> int:
         return self._xy1(0)
 
-    @property
+    @cached_property
     def y1(self) -> int:
         return self._xy1(1)
 
-    @property
+    @cached_property
     def x2(self) -> int:
         return self._xy2(0)
 
-    @property
+    @cached_property
     def y2(self) -> int:
         return self._xy2(1)
 
     def to_tuple(self) -> tuple[int, int, int, int]:
         return self.x1, self.y1, self.x2, self.y2
 
-    def to_polygon(self) -> "Polygon":
+    def to_polygon(self) -> Polygon:
         return Polygon(
             corners=tuple(
                 Coordinate(x=int(px), y=int(py))
@@ -99,7 +102,7 @@ class RotatedBoundingBox(ValueObject):
             )
         )
 
-    @property
+    @cached_property
     def _corners(self) -> list[tuple[float, float]]:
         cx, cy = float(self.center.x), float(self.center.y)
         w, h = self.width / 2.0, self.height / 2.0
@@ -132,23 +135,23 @@ class RotatedBoundingBox(ValueObject):
 class Polygon(ValueObject):
     corners: tuple[Coordinate, ...] = Field(min_length=4)
 
-    @property
+    @cached_property
     def x1(self) -> int:
         return min(int(c.x) for c in self.corners)
 
-    @property
+    @cached_property
     def y1(self) -> int:
         return min(int(c.y) for c in self.corners)
 
-    @property
+    @cached_property
     def x2(self) -> int:
         return max(int(c.x) for c in self.corners)
 
-    @property
+    @cached_property
     def y2(self) -> int:
         return max(int(c.y) for c in self.corners)
 
-    def shift_by(self, other: "Polygon") -> "Polygon":
+    def shift_by(self, other: Polygon) -> Polygon:
         dx = other.x1
         dy = other.y1
 
@@ -163,6 +166,24 @@ class Polygon(ValueObject):
         return Polygon(
             corners=corners
         )
+
+    def expand(
+        self,
+        margin: int,
+        bounds: BoundingBox | RotatedBoundingBox | Polygon,
+        /
+    ) -> Polygon:
+        x1 = max(bounds.x1, self.x1 - margin)
+        y1 = max(bounds.y1, self.y1 - margin)
+        x2 = min(bounds.x2, self.x2 + margin)
+        y2 = min(bounds.y2, self.y2 + margin)
+
+        return Polygon(corners=(
+            Coordinate(x=x1, y=y1),
+            Coordinate(x=x2, y=y1),
+            Coordinate(x=x2, y=y2),
+            Coordinate(x=x1, y=y2),
+        ))
 
     def to_tuple_list(self) -> list[tuple[int, int]]:
         return [corner.to_tuple() for corner in self.corners]

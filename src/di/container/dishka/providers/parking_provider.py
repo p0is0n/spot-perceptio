@@ -1,3 +1,4 @@
+from pathlib import Path
 from dishka import provide, provide_all
 
 from di.container.dishka.providers.provider import Provider
@@ -17,12 +18,15 @@ from parking.application.factory.contract_income import ContractIncomeFactory
 from parking.application.handler import analyze_spot
 
 from parking.infrastructure.provider.vehicle.identifier import DefaultVehicleIdentifier
-from parking.infrastructure.provider.vehicle.ml_detection_identifier import (
-    MlDetectionVehicleIdentifier
+from parking.infrastructure.provider.vehicle.yolo_identifier import (
+    YOLOVehicleIdentifier
 )
 from parking.infrastructure.provider.plate.identifier import DefaultPlateIdentifier
-from parking.infrastructure.provider.plate.ml_detection_identifier import (
-    MlDetectionPlateIdentifier
+from parking.infrastructure.provider.plate.yolo_identifier import (
+    YOLOPlateIdentifier
+)
+from parking.infrastructure.provider.plate.hyperlpr_identifier import (
+    HyperlprPlateIdentifier
 )
 
 from parking.ui.rest.mapper.request_income import RequestIncomeMapper
@@ -70,16 +74,14 @@ class ParkingProvider(Provider):
         config_ml: config.Ml,
         shared_config_ml: shared_config.Ml
     ) -> VehicleIdentifier:
-        match config_ml.vehicle_identifier:
-            case "default":
-                return DefaultVehicleIdentifier()
-            case "ml_detection":
-                return MlDetectionVehicleIdentifier(
-                    self._get_vehicle_identifier_ml_detection_provider(shared_config_ml),
-                    config_ml.vehicle_identifier_threshold
-                )
-            case _:
-                raise ValueError(f"Unknown vehicle identifier: {config_ml.vehicle_identifier}")
+        return DefaultVehicleIdentifier(tuple(
+            self._make_vehicle_identifier_by_name(
+                identifier,
+                config_ml,
+                shared_config_ml
+            )
+            for identifier in config_ml.vehicle_identifiers
+        ))
 
     @provide(override=False)
     def make_plate_identifier(
@@ -87,42 +89,87 @@ class ParkingProvider(Provider):
         config_ml: config.Ml,
         shared_config_ml: shared_config.Ml
     ) -> PlateIdentifier:
-        match config_ml.plate_identifier:
-            case "default":
-                return DefaultPlateIdentifier()
-            case "ml_detection":
-                return MlDetectionPlateIdentifier(
-                    self._get_plate_identifier_ml_detection_provider(shared_config_ml),
-                    config_ml.plate_identifier_threshold
+        return DefaultPlateIdentifier(tuple(
+            self._make_plate_identifier_by_name(
+                identifier,
+                config_ml,
+                shared_config_ml
+            )
+            for identifier in config_ml.plate_identifiers
+        ))
+
+    def _make_vehicle_identifier_by_name(
+        self,
+        identifier: str,
+        config_ml: config.Ml,
+        shared_config_ml: shared_config.Ml,
+        /
+    ) -> VehicleIdentifier:
+        match identifier:
+            case "yolo":
+                return YOLOVehicleIdentifier(
+                    self._get_vehicle_identifier_yolo_detection_provider(
+                        config_ml,
+                        shared_config_ml
+                    ),
+                    config_ml.vehicle_identifier_yolo_threshold
                 )
             case _:
-                raise ValueError(f"Unknown plate identifier: {config_ml.plate_identifier}")
+                raise ValueError(f"Unknown vehicle identifier: {identifier}")
 
-    def _get_vehicle_identifier_ml_detection_provider(
+    def _make_plate_identifier_by_name(
         self,
-        config_ml: shared_config.Ml
+        identifier: str,
+        config_ml: config.Ml,
+        shared_config_ml: shared_config.Ml,
+        /
+    ) -> PlateIdentifier:
+        match identifier:
+            case "yolo":
+                return YOLOPlateIdentifier(
+                    self._get_plate_identifier_yolo_detection_provider(
+                        config_ml,
+                        shared_config_ml
+                    ),
+                    config_ml.plate_identifier_yolo_threshold
+                )
+            case "hyperlpr":
+                return HyperlprPlateIdentifier(
+                    config_ml.plate_identifier_hyperlpr_threshold
+                )
+            case _:
+                raise ValueError(f"Unknown plate identifier: {identifier}")
+
+    def _get_vehicle_identifier_yolo_detection_provider(
+        self,
+        config_ml: config.Ml,
+        shared_config_ml: shared_config.Ml,
+        /
     ) -> MlDetectionProvider:
-        return self._get_ml_detection_provider(
-            str(config_ml.yolo_detection_model_path),
-            config_ml
+        return self._get_yolo_detection_provider(
+            config_ml.vehicle_identifier_yolo_model_path,
+            shared_config_ml
         )
 
-    def _get_plate_identifier_ml_detection_provider(
+    def _get_plate_identifier_yolo_detection_provider(
         self,
-        config_ml: shared_config.Ml
+        config_ml: config.Ml,
+        shared_config_ml: shared_config.Ml,
+        /
     ) -> MlDetectionProvider:
-        return self._get_ml_detection_provider(
-            str(config_ml.yolo_license_plate_detection_model_path),
-            config_ml
+        return self._get_yolo_detection_provider(
+            config_ml.plate_identifier_yolo_model_path,
+            shared_config_ml
         )
 
-    def _get_ml_detection_provider(
+    def _get_yolo_detection_provider(
         self,
-        model: str,
-        config_ml: shared_config.Ml
+        model: Path,
+        config_ml: shared_config.Ml,
+        /
     ) -> MlDetectionProvider:
         return YOLOMlDetectionProvider(
             model,
-            config_ml.yolo_detection_model_task,
-            config_ml.yolo_detection_model_device
+            "detect",
+            config_ml.yolo_model_device
         )

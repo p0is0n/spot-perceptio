@@ -63,6 +63,7 @@ classes.dot
 *.onnx
 *.pt
 *.pth
+*.bin
 
 # Docker
 *.pid

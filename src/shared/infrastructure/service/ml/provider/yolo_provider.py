@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import torch
 
@@ -13,18 +15,9 @@ from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 class YOLOMlDetectionProvider(MlDetectionProvider):
-    _vehicles_types: dict[str, detection.Type] = {
-        "bicycle": detection.Type.BICYCLE,
-        "motorcycle": detection.Type.MOTORCYCLE,
-        "car": detection.Type.CAR,
-        "bus": detection.Type.BUS,
-        "truck": detection.Type.TRUCK,
-        "license_plate": detection.Type.LICENSE_PLATE
-    }
-
     def __init__(
         self,
-        model: str,
+        model: Path,
         task: str,
         device: str | None = None,
         /
@@ -39,7 +32,7 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
 
     async def predict(self, request: detection.Request, /) -> detection.Response:
         frame = self._extract_frame(request.source)
-        results = self._model(
+        results = self._model.predict(
             source=frame
         )
 
@@ -75,7 +68,7 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             mask &= (conf_scores >= request.score_threshold)
 
         if request.target_types is not None:
-            target_cls = set(t.value for t in request.target_types)
+            target_cls = set(t.name for t in request.target_types)
             mask &= np.isin(class_ids, list(target_cls))
 
         idx = np.where(mask)[0]
@@ -91,7 +84,10 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             class_name = results[0].names.get(class_id, "unknown")
 
             response_boxes.append(detection.Box(
-                type=self._to_detection_type(class_name),
+                type=detection.Type(
+                    id=class_id,
+                    name=class_name
+                ),
                 score=float(conf_scores[box_idx]),
                 coordinate=coordinate
             ))
@@ -99,12 +95,6 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
         return detection.Response(
             id=None,
             boxes=tuple(response_boxes)
-        )
-
-    def _to_detection_type(self, class_name: str) -> detection.Type:
-        return self._vehicles_types.get(
-            class_name.lower(),
-            detection.Type.UNKNOWN
         )
 
     def _to_bounding_box_coordinate(

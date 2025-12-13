@@ -1,4 +1,4 @@
-from pydantic import FilePath
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Ml(BaseSettings):
@@ -8,8 +8,12 @@ class Ml(BaseSettings):
         validation_error_cause=True
     )
 
-    yolo_detection_model_path: FilePath
-    yolo_license_plate_detection_model_path: FilePath
+    yolo_model_device: str | None = None
 
-    yolo_detection_model_task: str = "detect"
-    yolo_detection_model_device: str | None = None
+    @field_validator('yolo_model_device', mode='before')
+    @classmethod
+    def parse_vehicle_identifiers(cls, v: str) -> str | None:
+        if not len(v) > 0:
+            return None
+
+        return v

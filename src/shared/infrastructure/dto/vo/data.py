@@ -35,7 +35,7 @@ class Cv2ImageBinary(ImageBinary):
             mask = np.zeros(self._image.shape[:2], dtype=np.uint8)
             pts = np.array(coordinate.to_tuple_list(), dtype=np.int32)
 
-            cv2.fillPoly(mask, [pts], 255)
+            cv2.fillPoly(mask, [pts], (255,))
 
             masked = cv2.bitwise_and(self._image, self._image, mask=mask)
             x, y, w, h = cv2.boundingRect(pts)

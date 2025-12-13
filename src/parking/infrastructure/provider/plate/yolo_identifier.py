@@ -1,14 +1,21 @@
 from shared.domain.aggregate.image import Image
-
 from shared.domain.vo.coordinate import Polygon
+from shared.domain.enum.country import Country
+
 from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.application.service.ml.dto import detection
 
 from parking.domain.vo.plate import Plate
 from parking.domain.provider.plate.identifier import PlateIdentifier
 
-class MlDetectionPlateIdentifier(PlateIdentifier):
+class YOLOPlateIdentifier(PlateIdentifier):
     _imgsz: int = 640
+    _threshold: float
+    _expand_margin: int = 20
+
+    _types: tuple[str, ...] = (
+        "license_plate",
+    )
 
     def __init__(
         self,
@@ -48,7 +55,7 @@ class MlDetectionPlateIdentifier(PlateIdentifier):
             if box.score < self._threshold:
                 continue
 
-            if box.type != detection.Type.LICENSE_PLATE:
+            if not box.type.name in self._types:
                 continue
 
             plate = await self._identify_license_plate(vehicle_coordinate, box)
@@ -72,10 +79,12 @@ class MlDetectionPlateIdentifier(PlateIdentifier):
         /
     ) -> Plate | None:
         local_polygon = box.coordinate.to_polygon()
-        global_polygon = local_polygon.shift_by(vehicle_coordinate)
+        global_polygon = local_polygon \
+            .shift_by(vehicle_coordinate) \
+            .expand(self._expand_margin, vehicle_coordinate)
 
         return Plate(
-            value="test",
-            country="RU",
+            value="UNKNOWN",
+            country=Country.UNKNOWN,
             coordinate=global_polygon
         )
