@@ -8,7 +8,7 @@ from ultralytics import YOLO # type: ignore[attr-defined]
 from ultralytics.engine.model import Model
 from ultralytics.engine.results import Results
 
-from shared.domain.vo.coordinate import Coordinate, BoundingBox
+from shared.domain.vo.coordinate import BoundingBox
 from shared.domain.aggregate.image import Image
 from shared.application.service.ml.dto import detection
 from shared.application.service.ml.provider.detection import MlDetectionProvider
@@ -101,11 +101,8 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
         self,
         xyxy: np.typing.NDArray[np.float32]
     ) -> BoundingBox:
-        x1, y1, x2, y2 = map(int, xyxy.tolist())
-
-        return BoundingBox(
-            p1=Coordinate(x=x1, y=y1),
-            p2=Coordinate(x=x2, y=y2),
+        return BoundingBox.from_xyxy(
+            *map(int, xyxy.tolist())
         )
 
     def _detach_as(

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from shared.domain.vo.coordinate import BoundingBox, RotatedBoundingBox, Polygon
+from shared.domain.vo.coordinate import Polygon
 from shared.domain.aggregate.image import Image
 from shared.application.service.ml.provider.detection import MlDetectionProvider
 from shared.application.service.ml.dto import detection
@@ -14,6 +14,7 @@ from parking.domain.provider.vehicle.identifier import VehicleIdentifier
 class YOLOVehicleIdentifier(VehicleIdentifier):
     _imgsz: int = 640
     _threshold: float
+    _threshold_overlap: float = 0.3
     _expand_margin: int = 40
 
     _vehicles_types: dict[str, VehicleType] = {
@@ -57,27 +58,26 @@ class YOLOVehicleIdentifier(VehicleIdentifier):
         if len(response.boxes) == 0:
             return None
 
-        vehicles: list[VehicleObserved] = []
+        best_vehicle: VehicleObserved | None = None
+        best_score: float = 0.0
         for box in response.boxes:
             if box.score < self._threshold:
                 continue
 
-            if not self._box_in_coordinate(box, coordinate):
+            overlap = self._box_overlap_ratio(box, coordinate)
+            if overlap < self._threshold_overlap:
                 continue
 
             vehicle = self._make_vehicle(image, box)
             if vehicle is None:
                 continue
 
-            vehicles.append(vehicle)
+            final_score = overlap * box.score
+            if final_score > best_score:
+                best_score = final_score
+                best_vehicle = vehicle
 
-        if len(vehicles) == 1:
-            return vehicles[0]
-
-        if len(vehicles) > 1:
-            raise ValueError("Multiple vehicles detected in the specified area.")
-
-        return None
+        return best_vehicle
 
     def _make_vehicle(
         self,
@@ -101,24 +101,28 @@ class YOLOVehicleIdentifier(VehicleIdentifier):
 
         return vehicle
 
-    def _box_in_coordinate(
+    def _box_overlap_ratio(
         self,
         box: detection.Box,
         coordinate: Polygon,
         /
-    ) -> bool:
-        polygon = self._coordinate_to_np_polygon(coordinate)
-        if isinstance(box.coordinate, (BoundingBox, RotatedBoundingBox, Polygon)):
-            cx = (box.coordinate.x1 + box.coordinate.x2) / 2
-            cy = (box.coordinate.y1 + box.coordinate.y2) / 2
-        else:
-            raise NotImplementedError("Unsupported box coordinate type.")
+    ) -> float:
+        spot = self._coordinate_to_np_polygon(coordinate)
+        vehicle = self._coordinate_to_np_polygon(box.coordinate.to_polygon())
 
-        return cv2.pointPolygonTest(polygon, (cx, cy), False) >= 0
+        vehicle_area = cv2.contourArea(vehicle)
+        if vehicle_area <= 0:
+            return 0.0
+
+        intersection_area, _ = cv2.intersectConvexConvex(spot, vehicle)
+        if intersection_area <= 0:
+            return 0.0
+
+        return intersection_area / vehicle_area
 
     def _coordinate_to_np_polygon(
         self,
         coordinate: Polygon,
         /
     ) -> np.typing.NDArray[np.float32]:
-        return np.array(coordinate.to_tuple_list(), dtype=np.int32)
+        return np.array(coordinate.to_tuple_list(), dtype=np.float32)

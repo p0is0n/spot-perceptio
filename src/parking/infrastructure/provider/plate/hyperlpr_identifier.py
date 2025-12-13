@@ -2,7 +2,7 @@ from cv2.typing import MatLike
 import hyperlpr3 as lpr3 # type: ignore
 
 from shared.domain.aggregate.image import Image
-from shared.domain.vo.coordinate import Coordinate, Polygon
+from shared.domain.vo.coordinate import Polygon, BoundingBox
 from shared.domain.enum.country import Country
 
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
@@ -67,12 +67,12 @@ class HyperlprPlateIdentifier(PlateIdentifier):
         offset_x = vehicle_coordinate.x1
         offset_y = vehicle_coordinate.y1
 
-        global_poly = Polygon(corners=(
-            Coordinate(x=x1 + offset_x, y=y1 + offset_y),
-            Coordinate(x=x2 + offset_x, y=y1 + offset_y),
-            Coordinate(x=x2 + offset_x, y=y2 + offset_y),
-            Coordinate(x=x1 + offset_x, y=y2 + offset_y),
-        )).expand(self._expand_margin, vehicle_coordinate)
+        global_poly = BoundingBox.from_xyxy(
+            x1 + offset_x,
+            y1 + offset_y,
+            x2 + offset_x,
+            y2 + offset_y
+        ).to_polygon().expand(self._expand_margin, vehicle_coordinate)
 
         return Plate(
             value=plate_text,

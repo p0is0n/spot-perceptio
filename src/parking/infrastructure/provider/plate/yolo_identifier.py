@@ -55,9 +55,6 @@ class YOLOPlateIdentifier(PlateIdentifier):
             if box.score < self._threshold:
                 continue
 
-            if not box.type.name in self._types:
-                continue
-
             plate = await self._identify_license_plate(vehicle_coordinate, box)
             if plate is None:
                 continue
@@ -78,6 +75,9 @@ class YOLOPlateIdentifier(PlateIdentifier):
         box: detection.Box,
         /
     ) -> Plate | None:
+        if not box.type.name in self._types:
+            return None
+
         local_polygon = box.coordinate.to_polygon()
         global_polygon = local_polygon \
             .shift_by(vehicle_coordinate) \
