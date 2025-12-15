@@ -24,7 +24,7 @@ class Cv2ImageBinary(ImageBinary):
 
         return self._encoded_data
 
-    def crop(
+    async def crop(
         self,
         coordinate: BoundingBox | RotatedBoundingBox | Polygon,
         /

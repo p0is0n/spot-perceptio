@@ -10,10 +10,10 @@ from parking.domain.aggregate.vehicle import VehicleDetails, VehicleObserved
 from parking.domain.enum.color import Color
 from parking.domain.enum.vehicle import VehicleType
 from parking.domain.provider.vehicle.identifier import VehicleIdentifier
+from parking.application import config
 
 class YOLOVehicleIdentifier(VehicleIdentifier):
     _imgsz: int = 640
-    _threshold: float
     _threshold_overlap: float = 0.3
     _expand_margin: int = 40
 
@@ -27,12 +27,12 @@ class YOLOVehicleIdentifier(VehicleIdentifier):
 
     def __init__(
         self,
+        config_ml: config.Ml,
         provider: MlDetectionProvider,
-        threshold: float,
         /
     ) -> None:
+        self._threshold = config_ml.vehicle_identifier_yolo_threshold
         self._provider = provider
-        self._threshold = threshold
 
     async def identify(
         self,

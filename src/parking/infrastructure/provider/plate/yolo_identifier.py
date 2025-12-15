@@ -8,9 +8,10 @@ from shared.application.service.ml.dto import detection
 from parking.domain.vo.plate import Plate
 from parking.domain.provider.plate.identifier import PlateIdentifier
 
+from parking.application import config
+
 class YOLOPlateIdentifier(PlateIdentifier):
     _imgsz: int = 640
-    _threshold: float
     _expand_margin: int = 20
 
     _types: tuple[str, ...] = (
@@ -19,12 +20,12 @@ class YOLOPlateIdentifier(PlateIdentifier):
 
     def __init__(
         self,
+        config_ml: config.Ml,
         provider: MlDetectionProvider,
-        threshold: float,
         /
     ) -> None:
+        self._threshold = config_ml.plate_identifier_yolo_threshold
         self._provider = provider
-        self._threshold = threshold
 
     async def identify(
         self,
@@ -32,7 +33,7 @@ class YOLOPlateIdentifier(PlateIdentifier):
         vehicle_coordinate: Polygon,
         /
     ) -> Plate | None:
-        vehicle_image = image.crop(vehicle_coordinate)
+        vehicle_image = await image.crop(vehicle_coordinate)
         response = await self._provider.predict(detection.Request(
             source=vehicle_image,
             image_size=self._imgsz
@@ -50,7 +51,8 @@ class YOLOPlateIdentifier(PlateIdentifier):
         if len(response.boxes) == 0:
             return None
 
-        plates: list[Plate] = []
+        best_plate: Plate | None = None
+        best_score: float = 0.0
         for box in response.boxes:
             if box.score < self._threshold:
                 continue
@@ -59,15 +61,11 @@ class YOLOPlateIdentifier(PlateIdentifier):
             if plate is None:
                 continue
 
-            plates.append(plate)
+            if box.score > best_score:
+                best_score = box.score
+                best_plate = plate
 
-        if len(plates) != 0:
-            return plates[0]
-
-        if len(plates) > 1:
-            raise ValueError("Multiple plates detected in the specified area.")
-
-        return None
+        return best_plate
 
     async def _identify_license_plate(
         self,

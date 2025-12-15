@@ -1,4 +1,5 @@
 from pathlib import Path
+from threading import Lock
 
 import numpy as np
 import torch
@@ -10,31 +11,42 @@ from ultralytics.engine.results import Results
 
 from shared.domain.vo.coordinate import BoundingBox
 from shared.domain.aggregate.image import Image
+
+from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 from shared.application.service.ml.dto import detection
 from shared.application.service.ml.provider.detection import MlDetectionProvider
+
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 class YOLOMlDetectionProvider(MlDetectionProvider):
     def __init__(
         self,
+        worker_pool_factory: WorkerPoolFactory,
         model: Path,
         task: str,
         device: str | None = None,
         /
     ) -> None:
-        self._model: Model = YOLO(
-            model=model,
-            task=task
-        )
+        self._worker_pool = worker_pool_factory.make_with_limits(max_workers=1)
+        self._lock = Lock()
+        self._model: Model = YOLO(model=model, task=task)
 
         if device is not None:
             self._model.to(device=device)
 
     async def predict(self, request: detection.Request, /) -> detection.Response:
-        frame = self._extract_frame(request.source)
-        results = self._model.predict(
-            source=frame
+        return await self._worker_pool.run(
+            self._do_predict,
+            request
         )
+
+    def _do_predict(self, request: detection.Request, /) -> detection.Response:
+        frame = self._extract_frame(request.source)
+        with self._lock:
+            with torch.inference_mode():
+                results = self._model.predict(
+                    source=frame
+                )
 
         return self._process_results(request, results)
 

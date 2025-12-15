@@ -5,18 +5,25 @@ from shared.domain.aggregate.image import Image
 from shared.domain.vo.coordinate import Polygon, BoundingBox
 from shared.domain.enum.country import Country
 
+from shared.application.tool.worker_pool import WorkerPool
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 from parking.domain.vo.plate import Plate
 from parking.domain.provider.plate.identifier import PlateIdentifier
 
+from parking.application import config
+
 class HyperlprPlateIdentifier(PlateIdentifier):
     _imgsz: int = 640
-    _threshold: float
     _expand_margin: int = 20
 
-    def __init__(self, threshold: float):
-        self._threshold = threshold
+    def __init__(
+        self,
+        config_ml: config.Ml,
+        worker_pool: WorkerPool
+    ) -> None:
+        self._threshold = config_ml.plate_identifier_hyperlpr_threshold
+        self._worker_pool = worker_pool
         self._catcher = lpr3.LicensePlateCatcher(
             detect_level=lpr3.DETECT_LEVEL_HIGH
         )
@@ -27,19 +34,31 @@ class HyperlprPlateIdentifier(PlateIdentifier):
         vehicle_coordinate: Polygon,
         /
     ) -> Plate | None:
-        vehicle_image = image.crop(vehicle_coordinate)
+        vehicle_image = await image.crop(vehicle_coordinate)
 
+        return await self._worker_pool.run(
+            self._do_identify,
+            vehicle_image,
+            vehicle_coordinate
+        )
+
+    def _do_identify(
+        self,
+        vehicle_image: Image,
+        vehicle_coordinate: Polygon,
+        /
+    ) -> Plate | None:
         frame = self._extract_frame(vehicle_image)
         frame = self._prepare_image(frame)
 
         response = self._catcher(frame)
 
-        return await self._process_response(
+        return self._process_response(
             response,
             vehicle_coordinate
         )
 
-    async def _process_response(
+    def _process_response(
         self,
         response: list[tuple[
             str, float, int, tuple[
