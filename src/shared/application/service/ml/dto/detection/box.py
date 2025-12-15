@@ -1,16 +1,9 @@
-from enum import Enum
-
 from shared.domain.vo.coordinate import BoundingBox, RotatedBoundingBox
 from shared.application.dto.base import Base
 
-class Type(str, Enum):
-    CAR = "car"
-    MOTORCYCLE = "motorcycle"
-    BICYCLE = "bicycle"
-    TRUCK = "truck"
-    BUS = "bus"
-    VAN = "van"
-    UNKNOWN = "unknown"
+class Type(Base):
+    id: int
+    name: str
 
 
 class Box(Base):

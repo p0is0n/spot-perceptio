@@ -7,7 +7,7 @@ from shared.domain.vo.base import Id
 from shared.domain.aggregate.spot import Spot
 from shared.domain.vo.coordinate import Polygon, Coordinate
 
-from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails
+from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails, VehicleObserved
 from parking.domain.enum.vehicle import VehicleType
 from parking.domain.enum.color import Color
 
@@ -51,20 +51,31 @@ def sample_spot() -> Any:
 
 
 @pytest.fixture
-def sample_vehicle(sample_image: Any, sample_vehicle_details: Any, sample_plate: Any) -> Any:
+def sample_vehicle(
+    sample_image: Any,
+    sample_vehicle_details: Any,
+    sample_plate: Any,
+    sample_coordinate_polygon: Any
+) -> Any:
     return Vehicle(
         image=sample_image,
         details=sample_vehicle_details,
-        plate=sample_plate
+        plate=sample_plate,
+        coordinate=sample_coordinate_polygon
     )
 
 
 @pytest.fixture
-def sample_vehicle_without_plate(sample_image: Any, sample_vehicle_details: Any) -> Any:
+def sample_vehicle_without_plate(
+    sample_image: Any,
+    sample_vehicle_details: Any,
+    sample_coordinate_polygon: Any
+) -> Any:
     return Vehicle(
         image=sample_image,
         details=sample_vehicle_details,
-        plate=None
+        plate=None,
+        coordinate=sample_coordinate_polygon
     )
 
 
@@ -73,4 +84,13 @@ def sample_vehicle_details() -> Any:
     return VehicleDetails(
         type=VehicleType.CAR,
         color=Color.BLUE
+    )
+
+
+@pytest.fixture
+def sample_vehicle_observed(sample_vehicle_details: Any, sample_coordinate_polygon: Any) -> Any:
+    return VehicleObserved(
+        details=sample_vehicle_details,
+        coordinate=sample_coordinate_polygon,
+        score=0.1
     )

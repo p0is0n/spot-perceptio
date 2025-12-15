@@ -1,3 +1,6 @@
+from pathlib import Path
+from threading import Lock
+
 import numpy as np
 import torch
 
@@ -6,41 +9,44 @@ from ultralytics import YOLO # type: ignore[attr-defined]
 from ultralytics.engine.model import Model
 from ultralytics.engine.results import Results
 
-from shared.domain.vo.coordinate import Coordinate, BoundingBox
+from shared.domain.vo.coordinate import BoundingBox
 from shared.domain.aggregate.image import Image
+
+from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 from shared.application.service.ml.dto import detection
 from shared.application.service.ml.provider.detection import MlDetectionProvider
+
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 class YOLOMlDetectionProvider(MlDetectionProvider):
-    _vehicles_types: dict[int, detection.Type] = {
-        1: detection.Type.BICYCLE,
-        3: detection.Type.MOTORCYCLE,
-        2: detection.Type.CAR,
-        5: detection.Type.BUS,
-        7: detection.Type.TRUCK,
-    }
-
     def __init__(
         self,
-        model: str,
+        worker_pool_factory: WorkerPoolFactory,
+        model: Path,
         task: str,
         device: str | None = None,
         /
     ) -> None:
-        self._model: Model = YOLO(
-            model=model,
-            task=task
-        )
+        self._worker_pool = worker_pool_factory.make_with_limits(max_workers=1)
+        self._lock = Lock()
+        self._model: Model = YOLO(model=model, task=task)
 
         if device is not None:
             self._model.to(device=device)
 
     async def predict(self, request: detection.Request, /) -> detection.Response:
-        frame = self._extract_frame(request.source)
-        results = self._model(
-            source=frame
+        return await self._worker_pool.run(
+            self._do_predict,
+            request
         )
+
+    def _do_predict(self, request: detection.Request, /) -> detection.Response:
+        frame = self._extract_frame(request.source)
+        with self._lock:
+            with torch.inference_mode():
+                results = self._model.predict(
+                    source=frame
+                )
 
         return self._process_results(request, results)
 
@@ -74,7 +80,7 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             mask &= (conf_scores >= request.score_threshold)
 
         if request.target_types is not None:
-            target_cls = set(t.value for t in request.target_types)
+            target_cls = set(t.name for t in request.target_types)
             mask &= np.isin(class_ids, list(target_cls))
 
         idx = np.where(mask)[0]
@@ -86,9 +92,14 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             box = boxes[box_idx]
             xyxy = box.xyxy.cpu().numpy()[0]
             coordinate = self._to_bounding_box_coordinate(xyxy)
+            class_id = class_ids[box_idx]
+            class_name = results[0].names.get(class_id, "unknown")
 
             response_boxes.append(detection.Box(
-                type=self._to_detection_type(class_ids[box_idx]),
+                type=detection.Type(
+                    id=class_id,
+                    name=class_name
+                ),
                 score=float(conf_scores[box_idx]),
                 coordinate=coordinate
             ))
@@ -98,21 +109,12 @@ class YOLOMlDetectionProvider(MlDetectionProvider):
             boxes=tuple(response_boxes)
         )
 
-    def _to_detection_type(self, class_id: int) -> detection.Type:
-        return self._vehicles_types.get(
-            class_id,
-            detection.Type.UNKNOWN
-        )
-
     def _to_bounding_box_coordinate(
         self,
         xyxy: np.typing.NDArray[np.float32]
     ) -> BoundingBox:
-        x1, y1, x2, y2 = map(int, xyxy.tolist())
-
-        return BoundingBox(
-            p1=Coordinate(x=x1, y=y1),
-            p2=Coordinate(x=x2, y=y2),
+        return BoundingBox.from_xyxy(
+            *map(int, xyxy.tolist())
         )
 
     def _detach_as(

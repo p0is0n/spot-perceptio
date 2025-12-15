@@ -8,18 +8,31 @@ from cv2.typing import MatLike
 from shared.domain.aggregate.image import Image
 from shared.domain.vo.coordinate import Coordinate, BoundingBox
 from shared.domain.vo.data import ImageBinary
+
+from shared.application.tool.worker_pool import WorkerPool
 from shared.application.http import client as http_client
 from shared.application.factory.image import ImageFactory
 from shared.application.dto.contract import income
+
 from shared.infrastructure.dto.vo.data import Cv2ImageBinary
 
 class Cv2ImageFactory(ImageFactory):
-    def __init__(self, http: http_client.ClientProtocol) -> None:
+    _max_image_bytes: int = 10 * 1024 * 1024 # 10 MB
+
+    def __init__(
+        self,
+        http: http_client.ClientProtocol,
+        worker_pool: WorkerPool
+    ) -> None:
         self._http = http
+        self._worker_pool = worker_pool
 
     async def make_from_income(self, image: income.Image, /) -> Image:
         raw_data = await self._extract_raw_bytes(image)
-        cv2_data = await self._decode_image(raw_data)
+        cv2_data = await self._worker_pool.run(
+            self._decode_image,
+            raw_data
+        )
 
         return self._make_image(cv2_data)
 
@@ -58,13 +71,20 @@ class Cv2ImageFactory(ImageFactory):
 
         return response.data.value
 
-    async def _decode_image(self, data: bytes) -> MatLike:
+    def _decode_image(self, data: bytes) -> MatLike:
+        if len(data) > self._max_image_bytes:
+            raise ValueError("Image is too large.")
+
         cv2_data = cv2.imdecode(
             np.frombuffer(data, dtype=np.uint8),
-            cv2.IMREAD_UNCHANGED
+            cv2.IMREAD_COLOR
         )
         if cv2_data is None:
             raise ValueError("Invalid image data provided, cv2 failed to decode.")
+
+        assert cv2_data.ndim == 3
+        assert cv2_data.shape[2] == 3
+        assert cv2_data.dtype == np.uint8
 
         return cv2_data
 

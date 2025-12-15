@@ -8,12 +8,12 @@ class Image(Aggregate):
     data: ImageBinary
     coordinate: BoundingBox | RotatedBoundingBox | Polygon
 
-    def crop(
+    async def crop(
         self,
         coordinate: BoundingBox | RotatedBoundingBox | Polygon,
         /
     ) -> Self:
-        cropped = self.data.crop(coordinate)
+        cropped = await self.data.crop(coordinate)
 
         return type(self)(
             data=cropped,

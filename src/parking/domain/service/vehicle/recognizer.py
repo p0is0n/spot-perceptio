@@ -1,7 +1,7 @@
 from shared.domain.vo.coordinate import Polygon
 from shared.domain.aggregate.image import Image
 
-from parking.domain.aggregate.vehicle import Vehicle, VehicleDetails
+from parking.domain.aggregate.vehicle import Vehicle, VehicleObserved
 from parking.domain.vo.plate import Plate
 from parking.domain.provider.vehicle.identifier import VehicleIdentifier
 from parking.domain.provider.plate.identifier import PlateIdentifier
@@ -18,26 +18,30 @@ class VehicleRecognizer:
     async def recognize(
         self,
         image: Image,
-        coordinate: Polygon,
+        spot_coordinate: Polygon,
         /
     ) -> Vehicle | None:
-        vehicle_details = await self._vehicle_identifier.identify(image, coordinate)
-        if vehicle_details is None:
+        vehicle_observed = await self._vehicle_identifier.identify(image, spot_coordinate)
+        if vehicle_observed is None:
             return None
 
-        plate = await self._plate_identifier.identify(image)
+        plate = await self._plate_identifier.identify(
+            image,
+            vehicle_observed.coordinate
+        )
 
-        return self._make_vehicle(image, vehicle_details, plate)
+        return self._make_vehicle(image, vehicle_observed, plate)
 
     def _make_vehicle(
         self,
         image: Image,
-        details: VehicleDetails,
+        observed: VehicleObserved,
         plate: Plate | None,
         /
     ) -> Vehicle:
         return Vehicle(
             image=image,
-            details=details,
-            plate=plate
+            details=observed.details,
+            plate=plate,
+            coordinate=observed.coordinate
         )

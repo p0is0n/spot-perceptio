@@ -4,4 +4,11 @@ from shared.infrastructure.tool.worker_pool import AsyncIOThreadWorkerPool
 
 class DefaultWorkerPoolFactory(WorkerPoolFactory):
     def make(self) -> WorkerPool:
-        return AsyncIOThreadWorkerPool(max_workers=10)
+        return AsyncIOThreadWorkerPool(
+            max_workers=10
+        )
+
+    def make_with_limits(self, *, max_workers: int) -> WorkerPool:
+        return AsyncIOThreadWorkerPool(
+            max_workers=max_workers
+        )

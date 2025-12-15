@@ -12,7 +12,7 @@ class Binary(Protocol):
 
 
 class ImageBinary(Binary, Protocol):
-    def crop(
+    async def crop(
         self,
         coordinate: BoundingBox | RotatedBoundingBox | Polygon,
         /
