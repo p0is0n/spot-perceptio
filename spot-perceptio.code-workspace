@@ -29,9 +29,11 @@
 				"type": "debugpy",
 				"request": "launch",
 				"cwd": "${workspaceFolder}",
+				"envFile": "${workspaceFolder}/.env",
 				"module": "uvicorn",
 				"args": [
 					"src.app.rest.main:app",
+					"--port=8001",
 					"--workers=1",
 					"--timeout-graceful-shutdown=10",
 					"--reload",

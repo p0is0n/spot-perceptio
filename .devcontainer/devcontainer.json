@@ -1,10 +1,10 @@
 {
   "name": "Spot Perceptio",
-  "dockerFile": "../Dockerfile.dev",
-  "context": "..",
-  //"mounts": [
-  //  "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cached"
-  //],
+  "image": "spot-perceptio-dev",
+  "build": {
+    "dockerfile": "../Dockerfile.dev",
+    "context": ".."
+  },
   "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
   "workspaceFolder": "/app"
 }

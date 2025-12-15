@@ -13,8 +13,9 @@ RUN apt-get update \
         libgl1 \
         libglib2.0-0
 
-WORKDIR /app
-COPY . .
+WORKDIR /build
+
+COPY pyproject.toml poetry.lock ./
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONDONTWRITEBYTECODE=1
