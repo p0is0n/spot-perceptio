@@ -13,13 +13,30 @@ endif
 #
 
 build-container:
-	@$(D) build -t $(NAME) -f Dockerfile .
+	@$(D) build -t "$(NAME)" -f Dockerfile .
 
 build-container-dev:
-	@$(D) build -t $(NAME) -f Dockerfile.dev .
+	@$(D) build -t "$(NAME)-dev" -f Dockerfile.dev .
 
 build-container-test:
-	@$(D) build -t $(NAME) -f Dockerfile.test .
+	@$(D) build -t "$(NAME)-test" -f Dockerfile.test .
+
+start-container:
+	@$(D) run -d \
+		--name "$(NAME)" \
+		--restart=always \
+		--env-file .env \
+		-p $(APP_PORT):$(APP_PORT) \
+		-v ./models:/app/models:ro \
+		"$(NAME)"
+
+stop-container:
+	@$(D) stop "$(NAME)"
+
+remove-container:
+	@$(D) rm -f "$(NAME)"
+
+restart-container: stop-container remove-container start-container
 
 run-in-container:
 	@if [ -z "$(CMD)" ]; then \
@@ -30,6 +47,17 @@ run-in-container:
 		--name $(NAME) \
 		-w /app \
 		$(NAME) \
+		$(if $(CMD),$(CMD),exit)
+
+run-in-container-test:
+	@if [ -z "$(CMD)" ]; then \
+		echo "Error: provide CMD, e.g. make run-in-container CMD='bash'"; \
+		exit 1; \
+	fi && \
+	$(D) run --rm \
+		--name "$(NAME)-test" \
+		-w /app \
+		"$(NAME)-test" \
 		$(if $(CMD),$(CMD),exit)
 
 clean-container:

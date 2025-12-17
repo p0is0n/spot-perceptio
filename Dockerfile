@@ -34,6 +34,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV APP_HOST=0.0.0.0
 ENV APP_PORT=8001
 
+ENV HOME=/app
+ENV YOLO_CONFIG_DIR=/app/.ultralytics
+ENV HYPERLPR_CONFIG_DIR=/app/.hyperlpr3
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONFAULTHANDLER=1
@@ -45,9 +49,12 @@ RUN addgroup --system app \
     && adduser --disabled-password --system --ingroup app app
 
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY ./src /app/src
+
+RUN mkdir ${YOLO_CONFIG_DIR} \
+    && mkdir ${HYPERLPR_CONFIG_DIR}
 
 RUN chown -R app:app /app
 USER app
