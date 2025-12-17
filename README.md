@@ -1,19 +1,19 @@
 # Spot Perceptio
 
-Spot Perceptio is an image-processing microservice built with **Python**, **FastAPI**, and **Ultralytics**.
+Spot Perceptio is an image-processing microservice built with **Python**, **FastAPI**, **Ultralytics YOLO**, and **HyperLPR**.
 
-The project follows a **Domain-Driven Design (DDD)** architecture to ensure clear domain boundaries, modularity, and maintainability.
+The project follows **Domain-Driven Design (DDD)** principles to ensure strict domain boundaries, modularity, testability, and long-term maintainability.
 
 ## Architecture Overview
 
-The project is organized according to Domain-Driven Design principles.
+The project is structured according to Domain-Driven Design principles.
 
-This structure allows:
-- clean boundaries  
-- plug-and-play ML backends  
-- easy unit testing  
-- extensibility for new vision tasks  
-- predictable development workflow  
+This architecture provides:
+- clear separation of domain, application, and infrastructure layers
+- easy plug-and-play ML backends
+- predictable extension points for new vision tasks
+- high testability and isolation of domain logic
+- a consistent and scalable development workflow
 
 ## Installation
 
@@ -33,29 +33,56 @@ cp .env.example .env
 
 _You can modify the `.env` file to suit your needs._
 
-#### Download a model into a folder:
+#### Download and prepare models:
 ```sh
 mkdir -p models/ul
 ```
 
 ```sh
 curl -L \
-  https://github.com/ultralytics/assets/releases/download/v8.3.0 yolo12s.pt -o models/ul/yolo12s.pt
+  https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo12s.pt -o models/ul/yolo12s.pt
 ```
 
 _You can choose another model (don't forget to update the `.env` file accordingly)._
 
 #### Build and run:
 ```sh
-docker build -t spot-perceptio .
+make build-container
 ```
 
 ```sh
-docker run -d \
-  --name spot-perceptio \
-  --restart=always \
-  --env-file .env \
-  -p 8001:8001 \
-  -v ./models:/app/models:ro \
-  spot-perceptio
+make start-container
 ```
+
+## API
+
+REST API is available at `http://127.0.0.1:8001/docs`.
+
+## Development
+
+The repository includes everything required to start development.
+VS Code is the recommended environment.
+
+Development features:
+- Development via devcontainer
+- Application source code located in /src
+- Tests located in /tests
+- Multiple Dockerfiles:
+- - Dockerfile - production image
+- - Dockerfile.dev - development environment
+- - Dockerfile.test - test execution
+- CI/CD pipelines powered by GitHub Actions
+
+## Third-Party Licenses
+
+This project depends on third-party open source libraries and models, including:
+
+- Ultralytics YOLO - licensed under the AGPL-3.0
+- HyperLPR - licensed under Apache-2.0
+
+These dependencies are used as external runtime components and are not
+distributed as part of this repository's source code.
+
+## License
+
+This project is licensed under the MIT License.
