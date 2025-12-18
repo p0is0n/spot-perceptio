@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip poetry \
     && rm -rf /root/.cache/pypoetry \
         /root/.cache/pip
 
-FROM --platform=$BUILDPLATFORM python:${PYTHON_VERSION}-slim AS runtime
+FROM python:${PYTHON_VERSION}-slim AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 \
