@@ -62,9 +62,6 @@ jobs:
             type=semver,pattern={{version}},enable=false
             type=match,pattern=v(.*),group=1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -81,8 +78,8 @@ jobs:
           context: .
           file: Dockerfile
           platforms: |
-            linux/arm64
-          push: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.repository.fork == false }}
+            linux/amd64
+          push: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.repository.fork == false) || (inputs.force && github.event.repository.fork == false && github.ref_name == 'main') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: true
