@@ -4,10 +4,10 @@ run-name: Check & Test Builds run by @${{ github.actor }}
 on:
   push:
     branches:
-      - "main"
+      - main
   pull_request:
     branches:
-      - "main"
+      - main
   workflow_dispatch:
 
 concurrency:
