@@ -45,6 +45,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -81,8 +92,10 @@ jobs:
           context: .
           file: Dockerfile
           platforms: |
+            linux/amd64
             linux/arm64
-          push: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.repository.fork == false }}
+          push: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.repository.fork == false) || (inputs.force && github.event.repository.fork == false && github.ref_name == 'main') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=min
