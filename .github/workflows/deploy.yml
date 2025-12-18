@@ -80,11 +80,7 @@ jobs:
           file: Dockerfile
           platforms: |
             linux/arm64
-          push: >
-            github.event_name == 'workflow_run' &&
-            github.event.workflow_run.head_branch == 'main' &&
-            github.event.repository.fork == false
-            && 'true' || 'false'
+          push: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == 'main' && github.event.repository.fork == false }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: true
