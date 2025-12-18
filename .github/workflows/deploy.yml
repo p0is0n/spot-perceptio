@@ -66,7 +66,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            name=${{ github.repository }},enable=${{ github.event.repository.fork == false }}
             ${{ env.GHCR_IMAGE }}
           tags: |
             type=ref,event=branch
