@@ -1,5 +1,5 @@
 name: Build & Push
-run-name: Build & Push for ${{ github.event.workflow_run.head_sha }}
+run-name: Build & Push for ${{ github.event.workflow_run.head_branch }}
 
 on:
   workflow_run:
@@ -21,9 +21,13 @@ env:
 
 jobs:
   docker-arm64-main:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: []
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.repository.fork == false
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,7 +57,11 @@ jobs:
           cache-to: type=gha,mode=min
 
   docker-amd64-main:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: [docker-arm64-main]
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.repository.fork == false
     runs-on: ubuntu-latest
 
     steps:
@@ -86,6 +94,10 @@ jobs:
 
   docker-manifest:
     needs: [docker-arm64-main, docker-amd64-main]
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.repository.fork == false
     runs-on: ubuntu-latest
 
     steps:
