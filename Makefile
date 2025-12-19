@@ -1,6 +1,11 @@
 NAME:=spot-perceptio
 APP_REST:=src.app.rest.main:app
 
+APP_HOST ?= 0.0.0.0
+APP_PORT ?= 8001
+APP_LOG_LEVEL ?= info
+APP_DEBUG ?= False
+
 D=docker
 
 ifneq ("$(wildcard .env)","")

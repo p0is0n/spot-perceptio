@@ -28,9 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV APP_HOST=0.0.0.0 \
     APP_PORT=8001 \
+    APP_LOG_LEVEL=info \
     HOME=/app \
     YOLO_CONFIG_DIR=/app/.ultralytics \
     HYPERLPR_CONFIG_DIR=/app/.hyperlpr3 \
+    ORT_LOGGING_LEVEL=ERROR \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1 \
@@ -54,4 +56,4 @@ USER app
 HEALTHCHECK --interval=30s --timeout=3s --retries=1 \
     CMD curl -f http://127.0.0.1:${APP_PORT}/system/health || exit 1
 
-CMD ["sh", "-c", "exec uvicorn app.rest.main:app --host $APP_HOST --port $APP_PORT --workers 1"]
+CMD ["sh", "-c", "exec uvicorn app.rest.main:app --host $APP_HOST --port $APP_PORT --log-level $APP_LOG_LEVEL --workers 1"]
