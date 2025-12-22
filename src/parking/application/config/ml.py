@@ -13,11 +13,15 @@ class Ml(BaseSettings):
     vehicle_identifiers: Annotated[tuple[str, ...], NoDecode]
     vehicle_identifier_yolo_model_path: FilePath | DirectoryPath
     vehicle_identifier_yolo_threshold: float = Field(default=0.80, gt=0.0, lt=1.0)
+    vehicle_identifier_cache: bool = True
+    vehicle_identifier_cache_tolerance: float = Field(default=0.20, gt=0.0, lt=1.0)
 
     plate_identifiers: Annotated[tuple[str, ...], NoDecode]
     plate_identifier_yolo_model_path: FilePath | DirectoryPath
     plate_identifier_yolo_threshold: float = Field(default=0.01, gt=0.0, lt=1.0)
     plate_identifier_hyperlpr_threshold: float = Field(default=0.90, gt=0.0, lt=1.0)
+    plate_identifier_cache: bool = True
+    plate_identifier_cache_tolerance: float = Field(default=0.20, gt=0.0, lt=1.0)
 
     @field_validator('vehicle_identifiers', 'plate_identifiers', mode='before')
     @classmethod
