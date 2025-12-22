@@ -10,6 +10,7 @@ from shared.application.tool.worker_pool import WorkerPool
 from shared.application.http.client.protocol import ClientProtocol as HttpClientProtocol
 from shared.application.factory.image import ImageFactory
 from shared.application.service.llm.provider import LLMProvider
+from shared.application.tool.image_similarity import ImageSimilarity
 
 from shared.infrastructure.factory.tool.worker_pool import DefaultWorkerPoolFactory
 from shared.infrastructure.http.client.httpx_protocol import HttpxClientProtocol
@@ -17,6 +18,9 @@ from shared.infrastructure.factory.dt import DefaultDateTimeFactory
 from shared.infrastructure.factory.image import Cv2ImageFactory
 from shared.infrastructure.service.llm.provider import OpenAILLMProvider
 from shared.infrastructure.service.ml.factory.yolo_provider import YOLOMlDetectionFactory
+from shared.infrastructure.tool.image_similarity.image_similarity import ImageSimilarityEvaluator
+from shared.infrastructure.tool.image_similarity.dhash_similarity import DHashSimilarity
+from shared.infrastructure.tool.image_similarity.phash_similarity import PHashSimilarity
 
 class SharedProvider(Provider):
     domain_datetime_factory = provide(
@@ -60,6 +64,16 @@ class SharedProvider(Provider):
         worker_pool_factory: WorkerPoolFactory
     ) -> WorkerPool:
         return worker_pool_factory.make()
+
+    @provide(override=False)
+    def make_image_similarity(
+        self,
+        worker_pool: WorkerPool
+    ) -> ImageSimilarity:
+        return ImageSimilarityEvaluator((
+            DHashSimilarity(worker_pool),
+            PHashSimilarity(worker_pool),
+        ))
 
     @provide(override=False)
     def make_config_ml(self) -> config.Ml:
