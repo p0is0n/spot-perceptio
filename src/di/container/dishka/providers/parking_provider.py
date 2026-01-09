@@ -77,17 +77,20 @@ class ParkingProvider(Provider):
         self,
         config_ml: config.Ml,
         vehicle_identifier_factory: VehicleIdentifierFactory,
-        image_cache: ImageCache[CacheVehicleIdentifierResult]
+        image_cache: ImageCache[CacheVehicleIdentifierResult],
+        logger: Logger
     ) -> VehicleIdentifier:
         default_identifier = DefaultVehicleIdentifier(
-            vehicle_identifier_factory.make_all()
+            vehicle_identifier_factory.make_all(),
+            logger
         )
         if not config_ml.vehicle_identifier_cache:
             return default_identifier
 
         return CacheVehicleIdentifier(
             default_identifier,
-            image_cache
+            image_cache,
+            logger
         )
 
     @provide(override=False)
@@ -95,17 +98,20 @@ class ParkingProvider(Provider):
         self,
         config_ml: config.Ml,
         plate_identifier_factory: PlateIdentifierFactory,
-        image_cache: ImageCache[CachePlateIdentifierResult]
+        image_cache: ImageCache[CachePlateIdentifierResult],
+        logger: Logger
     ) -> PlateIdentifier:
         default_identifier = DefaultPlateIdentifier(
-            plate_identifier_factory.make_all()
+            plate_identifier_factory.make_all(),
+            logger
         )
         if not config_ml.plate_identifier_cache:
             return default_identifier
 
         return CachePlateIdentifier(
             default_identifier,
-            image_cache
+            image_cache,
+            logger
         )
 
     @provide(override=False)
