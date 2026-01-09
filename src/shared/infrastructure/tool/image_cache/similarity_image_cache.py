@@ -5,6 +5,8 @@ from collections import OrderedDict
 from asyncio import Lock
 
 from shared.domain.aggregate.image import Image
+
+from shared.application.log import Logger
 from shared.application.tool.image_cache import ImageCache
 from shared.application.tool.image_similarity import ImageSimilarity
 
@@ -32,6 +34,7 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
         max_size: int,
         tolerance: float,
         similarity: ImageSimilarity,
+        logger: Logger,
     ) -> None:
         if max_size <= 0:
             raise ValueError("max_size must be positive")
@@ -40,10 +43,20 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
         self._tolerance = tolerance
         self._similarity = similarity
         self._lock = Lock()
+        self._logger = logger
         self._entries: OrderedDict[
-            int,
+            str,
             _SimilarityImageCacheEntry[_T]
         ] = OrderedDict()
+
+        self._logger.debug(
+            "Initialized",
+            data={
+                "max_size": max_size,
+                "tolerance": tolerance,
+            },
+            tags=("similarity_image_cache", "init"),
+        )
 
     async def get(self, image: Image, /) -> _T | None:
         now = self._now()
@@ -58,6 +71,14 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
 
                 if entry.expires_at is not None and entry.expires_at <= now:
                     del self._entries[key]
+                    self._logger.debug(
+                        "Entry expired",
+                        data={
+                            "image": await entry.image.fingerprint(),
+                        },
+                        tags=("similarity_image_cache", "get_expire"),
+                    )
+
                     continue
 
             is_similar = await self._similarity.similar(
@@ -71,8 +92,25 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
                     if current is None or not entry is current:
                         continue
 
+                    self._logger.debug(
+                        "Get hit",
+                        data={
+                            "image": await image.fingerprint(),
+                            "entry_image_id": await entry.image.fingerprint(),
+                        },
+                        tags=("similarity_image_cache", "get_hit"),
+                    )
+
                     self._entries.move_to_end(key)
                     return entry.value
+
+        self._logger.debug(
+            "Get miss",
+            data={
+                "image": await image.fingerprint(),
+            },
+            tags=("similarity_image_cache", "get_miss"),
+        )
 
         return None
 
@@ -83,7 +121,7 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
         /,
         ttl: timedelta | None = None
     ) -> None:
-        key = self._get_key(image)
+        key = await image.fingerprint()
         entry = _SimilarityImageCacheEntry(
             image=image,
             value=value,
@@ -101,8 +139,14 @@ class SimilarityImageCache(Generic[_T], ImageCache[_T]):
             if len(self._entries) > self._max_size:
                 self._entries.popitem(last=False)
 
-    def _get_key(self, image: Image, /) -> int:
-        return id(image)
+        self._logger.debug(
+            "Put entry stored",
+            data={
+                "image": key,
+                "ttl": str(ttl) if ttl is not None else None,
+            },
+            tags=("similarity_image_cache", "put_stored"),
+        )
 
     def _now(self) -> datetime:
         return datetime.now(UTC)

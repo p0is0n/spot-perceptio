@@ -19,3 +19,9 @@ class Image(Aggregate):
             data=cropped,
             coordinate=coordinate
         )
+
+    async def fingerprint(self) -> str:
+        data_hash = await self.data.hash()
+        coordinate_key = self.coordinate.key()
+
+        return f"{data_hash}:{coordinate_key}"
