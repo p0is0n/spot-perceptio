@@ -29,12 +29,9 @@ class Cv2ImageFactory(ImageFactory):
 
     async def make_from_income(self, image: income.Image, /) -> Image:
         raw_data = await self._extract_raw_bytes(image)
-        cv2_data = await self._worker_pool.run(
-            self._decode_image,
-            raw_data
-        )
+        cv2_data = await self._decode_image(raw_data)
 
-        return self._make_image(cv2_data)
+        return await self._make_image(cv2_data)
 
     async def _extract_raw_bytes(self, image: income.Image, /) -> bytes:
         raw_data: bytes | None = None
@@ -71,25 +68,36 @@ class Cv2ImageFactory(ImageFactory):
 
         return response.data.value
 
-    def _decode_image(self, data: bytes) -> MatLike:
+    async def _decode_image(self, data: bytes) -> MatLike:
         if len(data) > self._max_image_bytes:
             raise ValueError("Image is too large.")
 
-        cv2_data = cv2.imdecode(
+        cv2_data = await self._worker_pool.run(
+            cv2.imdecode,
             np.frombuffer(data, dtype=np.uint8),
             cv2.IMREAD_COLOR
         )
         if cv2_data is None:
             raise ValueError("Invalid image data provided, cv2 failed to decode.")
 
-        assert cv2_data.ndim == 3
-        assert cv2_data.shape[2] == 3
-        assert cv2_data.dtype == np.uint8
+        if (
+            cv2_data.ndim != 3
+            or cv2_data.shape[2] != 3
+            or cv2_data.dtype != np.uint8
+        ):
+            raise ValueError("Decoded image has invalid format.")
 
         return cv2_data
 
-    def _make_image(self, cv2_data: MatLike) -> Image:
-        data: ImageBinary = Cv2ImageBinary(image=cv2_data)
+    async def _make_image(
+        self,
+        cv2_data: MatLike,
+        /
+    ) -> Image:
+        data: ImageBinary = Cv2ImageBinary(
+            image=cv2_data,
+            worker_pool=self._worker_pool
+        )
 
         h, w = cv2_data.shape[:2]
         coordinate = BoundingBox(

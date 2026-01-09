@@ -14,6 +14,9 @@ class Coordinate(ValueObject):
     def to_tuple(self) -> tuple[int, int]:
         return self.x, self.y
 
+    def key(self) -> str:
+        return f"coordinate:{self.x},{self.y}"
+
 
 class BoundingBox(ValueObject):
     p1: Coordinate
@@ -72,6 +75,9 @@ class BoundingBox(ValueObject):
     def to_polygon(self) -> Polygon:
         return Polygon.from_bbox(self)
 
+    def key(self) -> str:
+        return f"boundingbox:{self.x1},{self.y1},{self.x2},{self.y2}"
+
 
 class RotatedBoundingBox(ValueObject):
     center: Coordinate
@@ -112,6 +118,12 @@ class RotatedBoundingBox(ValueObject):
                 Coordinate(x=int(px), y=int(py))
                 for px, py in self._corners
             )
+        )
+
+    def key(self) -> str:
+        return (
+            f"rotatedboundingbox:{self.center.key()}:"
+            f"{self.width}x{self.height}@{self.angle}"
         )
 
     @cached_property
@@ -205,3 +217,12 @@ class Polygon(ValueObject):
 
     def to_tuple_list(self) -> list[tuple[int, int]]:
         return [corner.to_tuple() for corner in self.corners]
+
+    def key(self) -> str:
+        keys = ";".join(
+            f"{x},{y}" for x, y in (
+                (c.x, c.y) for c in self.corners
+            )
+        )
+
+        return f"polygon:{keys}"
