@@ -95,7 +95,7 @@ valid-classmethod-first-arg = ["cls"]
 valid-metaclass-classmethod-first-arg = ["mcs"]
 
 [tool.pylint.similarities]
-min-similarity-lines = 8
+min-similarity-lines = 10
 ignore-comments = true
 ignore-docstrings = true
 

@@ -23,12 +23,17 @@ class AsyncIOThreadWorkerPool(WorkerPool):
         **kwargs: _P.kwargs,
     ) -> _R:
         async with self._semaphore:
-            loop = asyncio.get_running_loop()
-
-            return await loop.run_in_executor(
+            return await self._get_loop().run_in_executor(
                 self._executor,
                 partial(func, *args, **kwargs)
             )
 
     async def shutdown(self) -> None:
-        self._executor.shutdown(wait=True)
+        await self._get_loop().run_in_executor(
+            None,
+            self._executor.shutdown,
+            True
+        )
+
+    def _get_loop(self) -> asyncio.AbstractEventLoop:
+        return asyncio.get_running_loop()

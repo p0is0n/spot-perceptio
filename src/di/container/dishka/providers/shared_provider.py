@@ -13,6 +13,8 @@ from shared.application.log import Level, Logger
 from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 
 from shared.application.tool.worker_pool import WorkerPool
+from shared.application.tool.worker_parallel import WorkerParallel
+
 from shared.application.tool.image_similarity import ImageSimilarity
 
 from shared.application.http.client.protocol import ClientProtocol as HttpClientProtocol
@@ -30,6 +32,8 @@ from shared.infrastructure.factory.image import Cv2ImageFactory
 from shared.infrastructure.service.llm.provider import OpenAILLMProvider
 from shared.infrastructure.service.ml.factory.yolo_provider import YOLOMlDetectionFactory
 
+from shared.infrastructure.tool.worker_parallel import AsyncIOWorkerParallel
+
 from shared.infrastructure.tool.image_similarity.image_similarity import ImageSimilarityEvaluator
 from shared.infrastructure.tool.image_similarity.dhash_similarity import DHashSimilarity
 from shared.infrastructure.tool.image_similarity.phash_similarity import PHashSimilarity
@@ -44,6 +48,12 @@ class SharedProvider(Provider):
     app_worker_pool_factory = provide(
         source=DefaultWorkerPoolFactory,
         provides=WorkerPoolFactory,
+        override=False
+    )
+
+    app_worker_parallel_tool = provide(
+        source=AsyncIOWorkerParallel,
+        provides=WorkerParallel,
         override=False
     )
 
