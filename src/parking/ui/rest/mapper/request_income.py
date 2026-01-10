@@ -28,6 +28,16 @@ class RequestIncomeMapper:
             coordinate=coordinate
         )
 
+    def make_spots(
+        self,
+        spots: tuple[SpotRequest, ...],
+        /
+    ) -> tuple[income.Spot, ...]:
+        return tuple(
+            self.make_spot(spot)
+            for spot in spots
+        )
+
     def make_coordinate(
         self,
         coordinate: CoordinateRequest,

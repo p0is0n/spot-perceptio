@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from parking.ui.rest.action.analyze_spot import router as analyze_spot_router
+from parking.ui.rest.action.analyze_spots import router as analyze_spots_router
 
 parking_router = APIRouter(
     prefix="/parking",
@@ -8,3 +9,4 @@ parking_router = APIRouter(
 )
 
 parking_router.include_router(analyze_spot_router)
+parking_router.include_router(analyze_spots_router)

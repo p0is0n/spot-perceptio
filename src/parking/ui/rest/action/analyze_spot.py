@@ -15,7 +15,7 @@ router = APIRouter()
 @router.put(
     "/analyze_spot",
     status_code=status.HTTP_200_OK,
-    name="Analyze parking spot",
+    name="Analyze parking spot from image",
     description="Returns analysis of a parking spot based on the provided data.",
 )
 @inject

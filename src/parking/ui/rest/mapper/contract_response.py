@@ -1,8 +1,10 @@
 from parking.application.dto.contract.coordinate import Coordinate, Polygon
-from parking.application.dto.contract.spot import ParkingSpot, Spot
+from parking.application.dto.contract.spot import ParkingSpot, ParkingSpots, Spot
 from parking.application.dto.contract.plate import Plate
 from parking.application.dto.contract.vehicle import Vehicle, VehicleDetails
+
 from parking.ui.rest.response.analyze_spot import AnalyzeSpotResponse
+from parking.ui.rest.response.analyze_spots import AnalyzeSpotsResponse
 from parking.ui.rest.response.coordinate import CoordinateResponse, PolygonResponse
 from parking.ui.rest.response.spot import ParkingSpotResponse, SpotResponse
 from parking.ui.rest.response.vehicle import VehicleDetailsResponse, VehicleResponse
@@ -17,6 +19,16 @@ class ContractResponseMapper:
         return AnalyzeSpotResponse(
             parking_spot=self.make_parking_spot(parking_spot)
         )
+
+    def make_analyze_spots(
+        self,
+        parking_spots: ParkingSpots,
+        /
+    ) -> AnalyzeSpotsResponse:
+        return AnalyzeSpotsResponse(parking_spots=tuple(
+            self.make_parking_spot(spot)
+            for spot in parking_spots.spots
+        ))
 
     def make_parking_spot(
         self,

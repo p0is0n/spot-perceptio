@@ -16,7 +16,9 @@ from parking.domain.provider.plate.identifier import PlateIdentifier
 from parking.application import config
 from parking.application.factory.contract import ContractFactory
 from parking.application.factory.contract_income import ContractIncomeFactory
+
 from parking.application.handler import analyze_spot
+from parking.application.handler import analyze_spots
 
 from parking.infrastructure.provider.vehicle.identifier import DefaultVehicleIdentifier
 from parking.infrastructure.provider.vehicle.cache_identifier import (
@@ -59,6 +61,7 @@ class ParkingProvider(Provider):
 
     app_handlers = provide_all(
         analyze_spot.Handler,
+        analyze_spots.Handler,
         override=False
     )
 

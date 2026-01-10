@@ -12,3 +12,7 @@ class ParkingSpot(Base):
     occupied: bool
     spot: Spot
     vehicle: Vehicle | None = None
+
+
+class ParkingSpots(Base):
+    spots: tuple[ParkingSpot, ...]
