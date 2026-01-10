@@ -8,7 +8,7 @@ from di.container.dishka.providers.provider import Provider
 from shared.domain.factory.dt import DateTimeFactory
 
 from shared.application import config
-from shared.application.log import Logger
+from shared.application.log import Level, Logger
 
 from shared.application.factory.tool.worker_pool import WorkerPoolFactory
 
@@ -71,9 +71,10 @@ class SharedProvider(Provider):
     )
 
     @provide(override=False)
-    def make_logger(self) -> Logger:
+    def make_logger(self, config_app: config.App) -> Logger:
         logger_provider = self._create_logger(
-            name="app"
+            name="app",
+            level=config_app.log_level
         )
         logger: Logger = DefaultLogger(logger_provider)
 
@@ -101,6 +102,10 @@ class SharedProvider(Provider):
         )
 
     @provide(override=False)
+    def make_config_app(self) -> config.App:
+        return config.App()
+
+    @provide(override=False)
     def make_config_ml(self) -> config.Ml:
         return config.Ml()
 
@@ -108,15 +113,17 @@ class SharedProvider(Provider):
         self,
         *,
         name: str,
-        level: int = logging.DEBUG,
+        level: Level,
     ) -> logging.Logger:
+        logger_level = self._get_logger_level(level)
+
         logger = logging.getLogger(name)
         logger.setLevel(logging.DEBUG)
 
         if logger.handlers:
             raise ValueError("Logger already has handlers")
 
-        logger.addHandler(self._make_logger_handler(level))
+        logger.addHandler(self._make_logger_handler(logger_level))
         logger.propagate = False
 
         for library_name in (
@@ -124,11 +131,11 @@ class SharedProvider(Provider):
             "fastapi",
         ):
             library_logger = logging.getLogger(library_name)
-            library_logger.setLevel(logging.DEBUG)
+            library_logger.setLevel(self._get_logger_library_level(level))
             library_logger.handlers.clear()
             library_logger.propagate = True
 
-            for handler in list(logger.handlers):
+            for handler in logger.handlers:
                 library_logger.addHandler(handler)
 
         return logger
@@ -159,3 +166,27 @@ class SharedProvider(Provider):
                 "tags": ()
             }
         )
+
+    def _get_logger_level(self, level: Level) -> int:
+        map_levels: dict[Level, int] = {
+            Level.TRACE: logging.DEBUG,
+            Level.DEBUG: logging.DEBUG,
+            Level.INFO: logging.INFO,
+            Level.WARNING: logging.WARNING,
+            Level.ERROR: logging.ERROR,
+            Level.CRITICAL: logging.CRITICAL
+        }
+
+        return map_levels[level]
+
+    def _get_logger_library_level(self, level: Level) -> int:
+        map_levels: dict[Level, int] = {
+            Level.TRACE: logging.DEBUG,
+            Level.DEBUG: logging.DEBUG,
+            Level.INFO: logging.WARNING,
+            Level.WARNING: logging.WARNING,
+            Level.ERROR: logging.ERROR,
+            Level.CRITICAL: logging.CRITICAL
+        }
+
+        return map_levels[level]
