@@ -1,5 +1,5 @@
-from kernel.application.config.app import APP
+from kernel.application.config.app import App
 
 __all__ = [
-    'APP',
+    'App',
 ]
