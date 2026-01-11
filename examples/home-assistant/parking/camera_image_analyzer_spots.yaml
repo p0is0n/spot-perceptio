@@ -1,0 +1,229 @@
+alias: Parking Spot Analyzer
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /30
+conditions: []
+actions:
+  - variables:
+      retries: 3
+      delay_between_retries: 3
+  - sequence:
+      - variables:
+          response: null
+          is_success_response: false
+          attempt: 1
+      - repeat:
+          while:
+            - condition: template
+              value_template: |
+                {{ not is_success_response and attempt <= retries }}
+          sequence:
+            - action: rest_command.parking_analyze_spots
+              response_variable: sequence_response
+              data:
+                camera_entity: "{{ camera_entity }}"
+                spots: "{{ spots }}"
+            - variables:
+                response: "{{ sequence_response }}"
+                is_success_response: >-
+                  {{ (response is defined and response.status is defined and
+                  response.status == 200) }}
+                attempt: "{{ attempt + 1 }}"
+            - if:
+                - condition: template
+                  value_template: "{{ not is_success_response }}"
+              then:
+                - delay:
+                    seconds: "{{ delay_between_retries }}"
+      - if:
+          - condition: template
+            value_template: >-
+              {{ not (response is defined and response.status is defined and
+              response.content is defined) }}
+        then:
+          - stop: Wrong response
+            error: true
+      - repeat:
+          for_each: "{{ spots }}"
+          sequence:
+            - variables:
+                spot_id: "{{ repeat.item.id }}"
+                spot_result: >-
+                  {% if response.content.data is defined %}
+                    {{
+                      (
+                        response.content.data.parking_spots
+                        | selectattr('spot.id', 'equalto', repeat.item.id)
+                        | list
+                        | first
+                      )
+                    }}
+                  {% else %}
+                    {{ None }}
+                  {% endif %}
+            - variables:
+                result_content: >-
+                  {% if spot_result %}
+                    {{
+                      {
+                        "data": {
+                          "parking_spot": {
+                            "occupied": spot_result.occupied,
+                            "spot": {
+                              "id": spot_result.spot.id
+                            },
+                            "vehicle": (
+                              {
+                                "details": spot_result.vehicle.details,
+                                "plate": {
+                                  "value": spot_result.vehicle.plate.value
+                                }
+                              }
+                              if spot_result.vehicle is defined
+                                and spot_result.vehicle
+                                and spot_result.vehicle.plate
+                              else (
+                                {
+                                  "details": spot_result.vehicle.details,
+                                  "plate": None
+                                }
+                                if spot_result.vehicle is defined and spot_result.vehicle
+                                else None
+                              )
+                            )
+                          }
+                        }
+                      }
+                    }}
+                  {% else %}
+                    {{ { "detail": ["Spot not found"] } }}
+                  {% endif %}
+            - service: input_text.set_value
+              target:
+                entity_id: "{{ 'input_text.parking_analyze_spot_' ~ spot_id }}"
+              data:
+                value: >-
+                  {{
+                    {
+                      "status": response.status,
+                      "content": result_content
+                    } | to_json
+                  }}
+mode: single
+max_exceeded: silent
+variables:
+  camera_entity: camera.cam_parking
+  spots:
+    - id: a
+      corners:
+        - x: 1060
+          "y": 1434
+        - x: 2502
+          "y": 1436
+        - x: 2272
+          "y": 795
+        - x: 1905
+          "y": 117
+        - x: 1258
+          "y": 117
+        - x: 1138
+          "y": 774
+    - id: b
+      corners:
+        - x: 9
+          "y": 1434
+        - x: 1067
+          "y": 1432
+        - x: 1158
+          "y": 654
+        - x: 1251
+          "y": 167
+        - x: 710
+          "y": 176
+        - x: 480
+          "y": 274
+        - x: 7
+          "y": 995
+
+input_text:
+  parking_analyze_spot_a:
+    name: Parking Analyze Spot A
+    initial: ''
+    min: 0
+    max: 255
+    mode: text
+  parking_analyze_spot_b:
+    name: Parking Analyze Spot B
+    initial: ''
+    min: 0
+    max: 255
+    mode: text
+
+template:
+  - binary_sensor:
+      - name: Parking Analyze Spot A State
+        default_entity_id: binary_sensor.parking_analyze_spot_a_state
+        unique_id: parking_analyze_spot_a_state
+        device_class: occupancy
+        state: "{{ (states('input_text.parking_analyze_spot_a') | from_json).content.data.parking_spot.occupied == true }}"
+        availability: "{{ 'parking_spot' in states('input_text.parking_analyze_spot_a') }}"
+        attributes:
+            vehicle_type: "{{ None }}"
+            vehicle_color: "{{ None }}"
+            vehicle_plate: "{{ None }}"
+      - name: Parking Analyze Spot B State
+        default_entity_id: binary_sensor.parking_analyze_spot_b_state
+        unique_id: parking_analyze_spot_b_state
+        device_class: occupancy
+        state: "{{ (states('input_text.parking_analyze_spot_b') | from_json).content.data.parking_spot.occupied == true }}"
+        availability: "{{ 'parking_spot' in states('input_text.parking_analyze_spot_b') }}"
+        attributes:
+            vehicle_type: "{{ None }}"
+            vehicle_color: "{{ None }}"
+            vehicle_plate: "{{ None }}"
+
+rest_command:
+  parking_analyze_spots:
+    # INPUT PARAMETERS:
+    #
+    # image_url_secret?: string
+    # image_url?: string
+    # camera_entity?: string
+    #
+    # spots: list[{
+    #   id: string,
+    #   corners: list[{ x: number, y: number }]
+    # }]
+
+    url: "http://127.0.0.1:8001/parking/analyze_spots"
+    method: PUT
+    content_type: application/json
+    verify_ssl: false
+    timeout: 30
+    payload: >
+      {% if image_url_secret is defined and image_url_secret %}
+        {% set final_image_url = secrets[image_url_secret] %}
+      {% elif image_url is defined and image_url %}
+        {% set final_image_url = image_url %}
+      {% else %}
+        {% set ha_base = "http://homeassistant.local:8123/" %}
+        {% set image_path = state_attr(camera_entity, 'entity_picture') %}
+        {% set final_image_url = ha_base ~ image_path.lstrip('/') %}
+      {% endif %}
+
+      {
+        "image": {
+          "url": "{{ final_image_url }}"
+        },
+        "spots": [
+          {% for spot in spots %}
+          {
+            "id": "{{ spot.id }}",
+            "coordinate": {
+              "corners": {{ spot.corners | tojson }}
+            }
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }
