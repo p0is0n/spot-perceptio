@@ -228,7 +228,7 @@ def detect_vehicle_in_spot(
     mask = np.zeros(image.frame.shape[:2], dtype=np.uint8)
     pts = spot.as_polygon()
 
-    cv2.fillPoly(mask, [pts], 255)
+    cv2.fillPoly(mask, [pts], (255,))
 
     masked = cv2.bitwise_and(image.frame, image.frame, mask=mask)
     x, y, w, h = cv2.boundingRect(pts)

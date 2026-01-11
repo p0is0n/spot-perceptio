@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Image Compare Annotator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #161a22;
+            --card: #121622;
+            --border: #222631;
+            --text: #e7e7e7;
+            --muted: #a8b0bd;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+            font-size: 14px;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(15, 17, 21, 0.95);
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button,
+        input {
+            background: #121622;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 10px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 520px;
+            gap: 14px;
+            padding: 14px;
+        }
+
+        @media (max-width: 1100px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        .pair {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .pair-head {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .pair-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .frame {
+            background: #0c0e13;
+            border-radius: 12px;
+            height: min(38vh, 340px);
+            overflow: hidden;
+            border: 1px dashed rgba(255, 255, 255, 0.12);
+        }
+
+        .frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .controls {
+            border-top: 1px solid var(--border);
+            padding: 10px 12px;
+        }
+
+        .points {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .point-row {
+            display: flex;
+            align-items: center;
+            justify-content: right;
+            gap: 12px;
+        }
+
+        .point-label {
+            min-width: 80px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .radios {
+            display: flex;
+            gap: 12px;
+        }
+
+        .result {
+            min-height: 260px;
+            background: #0c0e13;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            white-space: pre-wrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            outline: none;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .radios label span {
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #121622;
+            font-size: 12px;
+            user-select: none;
+        }
+
+        .radios input {
+            display: none;
+        }
+
+        .radios input:checked+span {
+            background: #123cc8;
+            border-color: #123cc8;
+            color: #fff;
+        }
+
+        .radios span {
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <input type="file" id="fileInput" multiple accept="image/*" />
+        <input type="text" id="pointsInput" placeholder="Points: A,B,1,2" size="30" />
+        <button id="buildBtn">Build pairs</button>
+        <span id="progress" class="muted"></span>
+    </header>
+
+    <main>
+        <section class="panel">
+            <div id="pairs"></div>
+        </section>
+
+        <aside class="panel">
+            <div class="toolbar">
+                <button id="regenBtn">Regenerate result</button>
+            </div>
+
+            <div id="result" class="result" contenteditable="true"></div>
+        </aside>
+    </main>
+
+    <script>
+        const pairsEl = document.getElementById("pairs");
+        const resultEl = document.getElementById("result");
+        const progressEl = document.getElementById("progress");
+
+        let files = [];
+        let points = [];
+        let pairs = [];
+
+        const uid = () => crypto.randomUUID();
+
+        function parsePoints() {
+            return document
+                .getElementById("pointsInput")
+                .value
+                .split(",")
+                .map(p => p.trim())
+                .filter(Boolean);
+        }
+
+        function buildAllPairs(files) {
+            const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
+            const result = [];
+
+            for (let i = 0; i < sorted.length; i++) {
+                for (let j = i + 1; j < sorted.length; j++) {
+                    result.push({
+                        id: uid(),
+                        left: sorted[i],
+                        right: sorted[j],
+                        decisions: Object.fromEntries(points.map(p => [p, null]))
+                    });
+                }
+            }
+            return result;
+        }
+
+        function makeRadio(group, value, pair, point) {
+            const label = document.createElement("label");
+            const input = document.createElement("input");
+
+            input.type = "radio";
+            input.name = group;
+            input.value = value;
+            input.checked = pair.decisions[point] === value;
+
+            input.addEventListener("change", () => {
+                pair.decisions[point] = value;
+                updateProgress();
+                regenerateResult();
+            });
+
+            const text = document.createElement("span");
+            text.textContent = value;
+            label.append(input, text);
+
+            return label;
+        }
+
+        function render() {
+            pairsEl.innerHTML = "";
+
+            pairs.forEach((pair, index) => {
+                const card = document.createElement("div");
+                card.className = "pair";
+
+                card.innerHTML = `
+                    <div class="pair-head">
+                    Pair ${index + 1}: ${pair.left.name} ↔ ${pair.right.name}
+                    </div>
+                    <div class="pair-body">
+                    <div class="frame"><img src="${URL.createObjectURL(pair.left)}"></div>
+                    <div class="frame"><img src="${URL.createObjectURL(pair.right)}"></div>
+                    </div>
+                `;
+
+                const controls = document.createElement("div");
+                controls.className = "controls";
+
+                const pointsEl = document.createElement("div");
+                pointsEl.className = "points";
+
+                points.forEach(point => {
+                    const row = document.createElement("div");
+                    row.className = "point-row";
+
+                    const label = document.createElement("div");
+                    label.className = "point-label";
+                    label.textContent = `Point ${point}`;
+
+                    const radios = document.createElement("div");
+                    radios.className = "radios";
+
+                    const name = `pair_${pair.id}_${point}`;
+                    radios.append(makeRadio(name, "same", pair, point));
+                    radios.append(makeRadio(name, "diff", pair, point));
+
+                    row.append(label, radios);
+                    pointsEl.appendChild(row);
+                });
+
+                controls.appendChild(pointsEl);
+                card.appendChild(controls);
+                pairsEl.appendChild(card);
+            });
+
+            updateProgress();
+            regenerateResult();
+        }
+
+        function updateProgress() {
+            const total = pairs.length * points.length;
+            const done = pairs.reduce(
+                (acc, p) => acc + Object.values(p.decisions).filter(Boolean).length,
+                0
+            );
+            progressEl.textContent = `Decisions: ${done} / ${total}`;
+        }
+
+        function regenerateResult() {
+            const lines = [];
+
+            pairs.forEach(pair => {
+                const parts = [`${pair.left.name}|${pair.right.name}`];
+
+                points.forEach(point => {
+                    parts.push(`${point}|${pair.decisions[point] ?? "-"}`);
+                });
+
+                lines.push(parts.join(","));
+            });
+
+            resultEl.innerText = lines.join("\n");
+        }
+
+        function parseResultToState() {
+            const lines = resultEl.innerText
+                .split("\n")
+                .map(l => l.trim())
+                .filter(Boolean);
+
+            const pairMap = new Map();
+            pairs.forEach(p => {
+                pairMap.set(`${p.left.name}|${p.right.name}`, p);
+            });
+
+            lines.forEach(line => {
+                const [filesPart, ...decisions] = line.split(",");
+                const pair = pairMap.get(filesPart);
+                if (!pair) return;
+
+                decisions.forEach(part => {
+                    const [point, value] = part.split("|");
+                    if (!point || !value) return;
+                    if (!(point in pair.decisions)) return;
+
+                    pair.decisions[point] = value === "same" || value === "diff"
+                        ? value
+                        : null;
+                });
+            });
+        }
+
+        function syncUIFromState() {
+            pairs.forEach(pair => {
+                points.forEach(point => {
+                    const name = `pair_${pair.id}_${point}`;
+                    const radios = document.querySelectorAll(`input[name="${name}"]`);
+
+                    radios.forEach(radio => {
+                        radio.checked = pair.decisions[point] === radio.value;
+                    });
+                });
+            });
+        }
+
+
+        document.getElementById("fileInput").onchange = e => {
+            files = [...e.target.files];
+        };
+
+        document.getElementById("buildBtn").onclick = () => {
+            points = parsePoints();
+            if (!files.length || !points.length) return;
+            pairs = buildAllPairs(files);
+            render();
+        };
+
+        document.getElementById("regenBtn").onclick = () => {
+            regenerateResult();
+        };
+
+        resultEl.addEventListener("input", () => {
+            parseResultToState();
+            syncUIFromState();
+            updateProgress();
+        });
+    </script>
+
+</body>
+
+</html>
