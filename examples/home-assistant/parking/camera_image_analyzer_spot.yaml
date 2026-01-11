@@ -123,7 +123,6 @@ rest_command:
   parking_analyze_spot:
     # INPUT PARAMETERS:
     #
-    # image_url_secret?: string
     # image_url?: string
     # camera_entity?: string
     #
@@ -139,9 +138,7 @@ rest_command:
     verify_ssl: false
     timeout: 20
     payload: >
-      {% if image_url_secret is defined and image_url_secret %}
-        {% set final_image_url = secrets[image_url_secret] %}
-      {% elif image_url is defined and image_url %}
+      {% if image_url is defined and image_url %}
         {% set final_image_url = image_url %}
       {% else %}
         {% set ha_base = "http://homeassistant.local:8123/" %}
