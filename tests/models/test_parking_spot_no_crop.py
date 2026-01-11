@@ -32,38 +32,58 @@ IMAGES_EXTENSIONS = (".jpg", ".jpeg", ".png")
 PARKING_SPOTS = {
     "A": [
         {
-            "x": 1054,
-            "y": 1423
+            "x": 1060,
+            "y": 1434
         },
         {
-            "x": 2511,
-            "y": 1423
+            "x": 2502,
+            "y": 1436
         },
         {
-            "x": 2012,
-            "y": 213
+            "x": 2272,
+            "y": 795
         },
         {
-            "x": 1243,
-            "y": 228
+            "x": 1905,
+            "y": 117
+        },
+        {
+            "x": 1258,
+            "y": 117
+        },
+        {
+            "x": 1138,
+            "y": 774
         }
     ],
     "B": [
         {
-            "x": 387,
-            "y": 230
+            "x": 9,
+            "y": 1434
         },
         {
-            "x": 43,
-            "y": 1408
+            "x": 1067,
+            "y": 1432
         },
         {
-            "x": 1064,
-            "y": 1427
+            "x": 1158,
+            "y": 654
         },
         {
-            "x": 1212,
-            "y": 283
+            "x": 1251,
+            "y": 167
+        },
+        {
+            "x": 710,
+            "y": 176
+        },
+        {
+            "x": 480,
+            "y": 274
+        },
+        {
+            "x": 7,
+            "y": 995
         }
     ]
 }
@@ -274,6 +294,17 @@ def draw_detection_on_image(
                       (int(coordinate.x1), int(coordinate.y1)),
                       (int(coordinate.x2), int(coordinate.y2)),
                       box_color, 4)
+
+        poly = coordinate.to_polygon().to_tuple_list()
+        poly_pts = np.array(poly, dtype=np.int32)
+
+        cv2.polylines(
+            img,
+            [poly_pts],
+            isClosed=True,
+            color=COLOR_BLUE,
+            thickness=4
+        )
 
         cv2.circle(img, (int(cx), int(cy)), 10, COLOR_BLUE, -1)
 
